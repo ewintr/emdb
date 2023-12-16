@@ -1,8 +1,9 @@
-package handler
+package app
 
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 )
 
@@ -11,7 +12,9 @@ func Index(w http.ResponseWriter) {
 	fmt.Fprint(w, `{"message":"emdb index"}`)
 }
 
-func Error(w http.ResponseWriter, status int, message string, err error) {
+func Error(w http.ResponseWriter, status int, message string, err error, logger *slog.Logger) {
+	logger.Error(message, "error", err)
+
 	w.WriteHeader(status)
 
 	var resBody []byte

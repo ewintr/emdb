@@ -1,4 +1,4 @@
-package handler
+package app
 
 import (
 	"fmt"
@@ -43,7 +43,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// authenticate
 	if key := r.Header.Get("Authorization"); key != s.apiKey {
-		Error(rec, http.StatusUnauthorized, "unauthorized", fmt.Errorf("invalid api key"))
+		Error(rec, http.StatusUnauthorized, "unauthorized", fmt.Errorf("invalid api key"), logger)
 		logger.Info("unauthorized", "key", key)
 		returnResponse(w, rec, r, logger)
 		return
@@ -58,7 +58,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	api, ok := s.apis[head]
 	if !ok {
-		Error(rec, http.StatusNotFound, "Not found", fmt.Errorf("%s is not a valid path", r.URL.Path))
+		Error(rec, http.StatusNotFound, "Not found", fmt.Errorf("%s is not a valid path", r.URL.Path), logger)
 		returnResponse(w, rec, r, logger)
 		return
 	}

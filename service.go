@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"ewintr.nl/emdb/handler"
+	"ewintr.nl/emdb/app"
 )
 
 func main() {
@@ -20,10 +20,17 @@ func main() {
 		os.Exit(1)
 	}
 	apiKey := getParam("API_KEY", "hoi")
+	repo, err := app.NewSQLite(getParam("DB_PATH", "test.db"))
+	if err != nil {
+		fmt.Printf("could not create new sqlite repo: %s", err.Error())
+		os.Exit(1)
+	}
 
-	apis := handler.APIIndex{}
+	apis := app.APIIndex{
+		"movie": app.NewMovieAPI(repo, logger),
+	}
 
-	go http.ListenAndServe(fmt.Sprintf(":%d", port), handler.NewServer(apiKey, apis, logger))
+	go http.ListenAndServe(fmt.Sprintf(":%d", port), app.NewServer(apiKey, apis, logger))
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
