@@ -4,14 +4,27 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
+	"ewintr.nl/emdb/movie"
+	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
 )
 
 type sqliteMigration string
 
 var sqliteMigrations = []sqliteMigration{
-	`CREATE TABLE movie ("id" TEXT UNIQUE, "title" TEXT, "year" INTEGER, "imdb_id" TEXT, "watched_on" TEXT, "rating" INTEGER, "comment" TEXT)`,
+	`CREATE TABLE movie (
+		"id" TEXT UNIQUE NOT NULL, 
+		"imdb_id" TEXT NOT NULL DEFAULT "",
+		"title" TEXT NOT NULL DEFAULT "",
+		"english_title" TEXT NOT NULL DEFAULT "",
+		"year" INTEGER NOT NULL DEFAULT 0, 
+		"directors" TEXT NOT NULL DEFAULT "",
+		"watched_on" TEXT NOT NULL DEFAULT "", 
+		"rating" INTEGER NOT NULL DEFAULT 0, 
+		"comment" TEXT NOT NULL DEFAULT ""
+	)`,
 	`CREATE TABLE system ("latest_sync" INTEGER)`,
 	`INSERT INTO system (latest_sync) VALUES (0)`,
 }
@@ -44,16 +57,21 @@ func NewSQLite(dbPath string) (*SQLite, error) {
 	return s, nil
 }
 
-func (s *SQLite) StoreMovie(movie *Movie) error {
+func (s *SQLite) Store(m *movie.Movie) error {
+	if m.ID == "" {
+		m.ID = uuid.New().String()
+	}
+
 	tx, err := s.db.Begin()
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 	defer tx.Rollback()
 
-	if _, err := s.db.Exec(`REPLACE INTO movie (id, title, year, imdb_id, watched_on, rating, comment) 
-	VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		movie.ID, movie.Title, movie.Year, movie.IMDBID, movie.WatchedOn, movie.Rating, movie.Comment); err != nil {
+	directors := strings.Join(m.Directors, ",")
+	if _, err := s.db.Exec(`REPLACE INTO movie (id, imdb_id, title, english_title, year, directors, watched_on, rating, comment) 
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		m.ID, m.IMDBID, m.Title, m.EnglishTitle, m.Year, directors, m.WatchedOn, m.Rating, m.Comment); err != nil {
 		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 
@@ -64,50 +82,53 @@ func (s *SQLite) StoreMovie(movie *Movie) error {
 	return nil
 }
 
-func (s *SQLite) FindOne(id string) (*Movie, error) {
+func (s *SQLite) Delete(id string) error {
+	if _, err := s.db.Exec(`DELETE FROM movie WHERE id=?`, id); err != nil {
+		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+	}
+
+	return nil
+}
+
+func (s *SQLite) FindOne(id string) (*movie.Movie, error) {
 	row := s.db.QueryRow(`
-SELECT title, year, imdb_id, watched_on, rating, comment
+SELECT imdb_id, title, english_title, year, directors, watched_on, rating, comment
 FROM movie
 WHERE id=?`, id)
 	if row.Err() != nil {
 		return nil, row.Err()
 	}
 
-	movie := &Movie{
+	m := &movie.Movie{
 		ID: id,
 	}
-	if err := row.Scan(&movie.Title, &movie.Year, &movie.IMDBID, &movie.WatchedOn, &movie.Rating, &movie.Comment); err != nil {
-		return nil, err
+	var directors string
+	if err := row.Scan(&m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
+	m.Directors = strings.Split(directors, ",")
 
-	return movie, nil
+	return m, nil
 }
 
-func (s *SQLite) FindAll() ([]*Movie, error) {
+func (s *SQLite) FindAll() ([]*movie.Movie, error) {
 	rows, err := s.db.Query(`
-SELECT id, title, year, imdb_id, watched_on, rating, comment
+SELECT imdb_id, title, english_title, year, directors, watched_on, rating, comment
 FROM movie`)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 
-	movies := make([]*Movie, 0)
+	movies := make([]*movie.Movie, 0)
 	defer rows.Close()
 	for rows.Next() {
-		var id, title, imdbID, watchedOn, comment string
-		var year, rating int
-		if err := rows.Scan(&id, &title, &year, &imdbID, &watchedOn, &rating, &comment); err != nil {
+		m := &movie.Movie{}
+		var directors string
+		if err := rows.Scan(&m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 		}
-		movies = append(movies, &Movie{
-			ID:        id,
-			Title:     title,
-			Year:      year,
-			IMDBID:    imdbID,
-			WatchedOn: watchedOn,
-			Rating:    rating,
-			Comment:   comment,
-		})
+		m.Directors = strings.Split(directors, ",")
+		movies = append(movies, m)
 	}
 
 	return movies, nil

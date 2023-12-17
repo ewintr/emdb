@@ -9,25 +9,16 @@ import (
 	"log/slog"
 	"net/http"
 
+	"ewintr.nl/emdb/movie"
 	"github.com/google/uuid"
 )
 
-type Movie struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	Year      int    `json:"year"`
-	IMDBID    string `json:"imdb_id"`
-	WatchedOn string `json:"watched_on"`
-	Rating    int    `json:"rating"`
-	Comment   string `json:"comment"`
-}
-
 type MovieAPI struct {
-	repo   *SQLite
+	repo   movie.MovieRepository
 	logger *slog.Logger
 }
 
-func NewMovieAPI(repo *SQLite, logger *slog.Logger) *MovieAPI {
+func NewMovieAPI(repo movie.MovieRepository, logger *slog.Logger) *MovieAPI {
 	return &MovieAPI{
 		repo:   repo,
 		logger: logger.With("api", "movie"),
@@ -37,16 +28,20 @@ func NewMovieAPI(repo *SQLite, logger *slog.Logger) *MovieAPI {
 func (api *MovieAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logger := api.logger.With("method", "serveHTTP")
 
-	movieID, _ := ShiftPath(r.URL.Path)
+	subPath, _ := ShiftPath(r.URL.Path)
 	switch {
-	case r.Method == http.MethodGet && movieID != "":
-		api.Read(w, r, movieID)
-	case r.Method == http.MethodGet && movieID == "":
+	case r.Method == http.MethodGet && subPath != "":
+		api.Read(w, r, subPath)
+	case r.Method == http.MethodPut && subPath != "":
+		api.Store(w, r, subPath)
+	case r.Method == http.MethodPost && subPath == "":
+		api.Store(w, r, "")
+	case r.Method == http.MethodDelete && subPath != "":
+		api.Delete(w, r, subPath)
+	case r.Method == http.MethodGet && subPath == "":
 		api.List(w, r)
-	case r.Method == http.MethodPost:
-		api.Create(w, r)
 	default:
-		Error(w, http.StatusNotFound, "unregistered path", fmt.Errorf("method %q with subpath %q was not registered in /movie", r.Method, movieID), logger)
+		Error(w, http.StatusNotFound, "unregistered path", fmt.Errorf("method %q with subpath %q was not registered in /movie", r.Method, subPath), logger)
 	}
 }
 
@@ -73,7 +68,7 @@ func (api *MovieAPI) Read(w http.ResponseWriter, r *http.Request, movieID string
 	fmt.Fprint(w, string(resJson))
 }
 
-func (api *MovieAPI) Create(w http.ResponseWriter, r *http.Request) {
+func (api *MovieAPI) Store(w http.ResponseWriter, r *http.Request, urlID string) {
 	logger := api.logger.With("method", "create")
 
 	body, err := io.ReadAll(r.Body)
@@ -83,14 +78,23 @@ func (api *MovieAPI) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	var movie *Movie
+	var movie *movie.Movie
 	if err := json.Unmarshal(body, &movie); err != nil {
 		Error(w, http.StatusBadRequest, "could not unmarshal request body", err, logger)
 		return
 	}
-	movie.ID = uuid.New().String()
 
-	if err := api.repo.StoreMovie(movie); err != nil {
+	switch {
+	case urlID == "" && movie.ID == "":
+		movie.ID = uuid.New().String()
+	case urlID != "" && movie.ID == "":
+		movie.ID = urlID
+	case urlID != "" && movie.ID != "" && urlID != movie.ID:
+		Error(w, http.StatusBadRequest, "id in path does not match id in body", err, logger)
+		return
+	}
+
+	if err := api.repo.Store(movie); err != nil {
 		Error(w, http.StatusInternalServerError, "could not store movie", err, logger)
 		return
 	}
@@ -102,6 +106,17 @@ func (api *MovieAPI) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(resBody))
+}
+
+func (api *MovieAPI) Delete(w http.ResponseWriter, r *http.Request, urlID string) {
+	logger := api.logger.With("method", "delete")
+
+	if err := api.repo.Delete(urlID); err != nil {
+		Error(w, http.StatusInternalServerError, "could not delete movie", err, logger)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (api *MovieAPI) List(w http.ResponseWriter, r *http.Request) {
@@ -120,5 +135,4 @@ func (api *MovieAPI) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(resBody))
-
 }
