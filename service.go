@@ -20,8 +20,9 @@ var (
 
 func main() {
 	flag.Parse()
-
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger.Info("starting server", "port", *port, "dbPath", *dbPath)
+
 	repo, err := app.NewSQLite(*dbPath)
 	if err != nil {
 		fmt.Printf("could not create new sqlite repo: %s", err.Error())
@@ -33,8 +34,11 @@ func main() {
 	}
 
 	go http.ListenAndServe(fmt.Sprintf(":%d", *port), app.NewServer(*apiKey, apis, logger))
+	logger.Info("server started")
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	<-c
+
+	logger.Info("server stopped")
 }
