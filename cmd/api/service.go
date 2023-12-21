@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"ewintr.nl/emdb/app"
+	"ewintr.nl/emdb/cmd/api/app"
 )
 
 var (
