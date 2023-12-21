@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"ewintr.nl/emdb/cmd/api/app"
+	"ewintr.nl/emdb/cmd/api/server"
 )
 
 var (
@@ -23,17 +23,17 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	logger.Info("starting server", "port", *port, "dbPath", *dbPath)
 
-	repo, err := app.NewSQLite(*dbPath)
+	repo, err := server.NewSQLite(*dbPath)
 	if err != nil {
 		fmt.Printf("could not create new sqlite repo: %s", err.Error())
 		os.Exit(1)
 	}
 
-	apis := app.APIIndex{
-		"movie": app.NewMovieAPI(repo, logger),
+	apis := server.APIIndex{
+		"movie": server.NewMovieAPI(repo, logger),
 	}
 
-	go http.ListenAndServe(fmt.Sprintf(":%d", *port), app.NewServer(*apiKey, apis, logger))
+	go http.ListenAndServe(fmt.Sprintf(":%d", *port), server.NewServer(*apiKey, apis, logger))
 	logger.Info("server started")
 
 	c := make(chan os.Signal, 1)
