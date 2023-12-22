@@ -1,8 +1,6 @@
 package clients
 
 import (
-	"fmt"
-
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
@@ -13,7 +11,7 @@ type TMDB struct {
 func NewTMDB(apikey string) (*TMDB, error) {
 	tmdbClient, err := tmdb.Init(apikey)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 	tmdbClient.SetClientAutoRetry()
 	tmdbClient.SetAlternateBaseURL()
