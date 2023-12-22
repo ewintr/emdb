@@ -43,7 +43,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
 		case "enter":
-			m.Search()
+			switch m.focused {
+			case "search":
+				m.Search()
+			case "result":
+				m.Log(fmt.Sprintf("selected: %d", m.searchResults.Index()))
+			}
 		}
 
 	case tea.WindowSizeMsg:
@@ -82,11 +87,7 @@ func (m *model) Search() {
 	items := []list.Item{}
 	for _, res := range movies {
 		items = append(items, Movie{m: res})
-		//fmt.Printf("result: %+v\n", res.Title)
 	}
-	//for i := 0; i < 10; i++ {
-	//	items = append(items, Movie{m: movie.Movie{Title: fmt.Sprintf("title %d", i)}})
-	//}
 
 	m.searchResults.SetItems(items)
 	m.focused = "result"

@@ -1,6 +1,6 @@
 
 run-server:
-	go run ./cmd/api/service.go -apikey localOnly
+	go run ./cmd/api-service/service.go -apikey localOnly
 
 run-cli:
-	go run ./cmd/cli/main.go
+	go run ./cmd/terminal-client/main.go

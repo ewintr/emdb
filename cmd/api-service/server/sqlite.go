@@ -27,6 +27,8 @@ var sqliteMigrations = []sqliteMigration{
 	)`,
 	`CREATE TABLE system ("latest_sync" INTEGER)`,
 	`INSERT INTO system (latest_sync) VALUES (0)`,
+	`ALTER TABLE movie ADD COLUMN tmdb_id INTEGER NOT NULL DEFAULT 0`,
+	`ALTER TABLE movie ADD COLUMN summary TEXT NOT NULL DEFAULT ""`,
 }
 
 var (
@@ -69,9 +71,9 @@ func (s *SQLite) Store(m *movie.Movie) error {
 	defer tx.Rollback()
 
 	directors := strings.Join(m.Directors, ",")
-	if _, err := s.db.Exec(`REPLACE INTO movie (id, imdb_id, title, english_title, year, directors, watched_on, rating, comment) 
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		m.ID, m.IMDBID, m.Title, m.EnglishTitle, m.Year, directors, m.WatchedOn, m.Rating, m.Comment); err != nil {
+	if _, err := s.db.Exec(`REPLACE INTO movie (id, tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment) 
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		m.ID, m.IMDBID, m.IMDBID, m.Title, m.EnglishTitle, m.Year, directors, m.Summary, m.WatchedOn, m.Rating, m.Comment); err != nil {
 		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 
@@ -92,7 +94,7 @@ func (s *SQLite) Delete(id string) error {
 
 func (s *SQLite) FindOne(id string) (*movie.Movie, error) {
 	row := s.db.QueryRow(`
-SELECT imdb_id, title, english_title, year, directors, watched_on, rating, comment
+SELECT tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
 FROM movie
 WHERE id=?`, id)
 	if row.Err() != nil {
@@ -103,7 +105,7 @@ WHERE id=?`, id)
 		ID: id,
 	}
 	var directors string
-	if err := row.Scan(&m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
+	if err := row.Scan(&m.IMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 	m.Directors = strings.Split(directors, ",")
@@ -113,7 +115,7 @@ WHERE id=?`, id)
 
 func (s *SQLite) FindAll() ([]*movie.Movie, error) {
 	rows, err := s.db.Query(`
-SELECT imdb_id, title, english_title, year, directors, watched_on, rating, comment
+SELECT tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
 FROM movie`)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
@@ -124,7 +126,7 @@ FROM movie`)
 	for rows.Next() {
 		m := &movie.Movie{}
 		var directors string
-		if err := rows.Scan(&m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
+		if err := rows.Scan(&m.TMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 		}
 		m.Directors = strings.Split(directors, ",")
