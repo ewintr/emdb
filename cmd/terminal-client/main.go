@@ -15,11 +15,6 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	//
-	//movies, err := tdb.Search("stark fear")
-	//for _, m := range movies.Results {
-	//	fmt.Printf("result: %+v\n", m)
-	//}
 
 	p := tui.New(tdb)
 	if _, err := p.Run(); err != nil {

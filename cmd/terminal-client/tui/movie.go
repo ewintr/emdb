@@ -15,9 +15,9 @@ func (m Movie) FilterValue() string {
 }
 
 func (m Movie) Title() string {
-	return m.m.Title
+	return fmt.Sprintf("%s (%d)", m.m.Title, m.m.Year)
 }
 
 func (m Movie) Description() string {
-	return fmt.Sprintf("description: %s", m.m.Title)
+	return fmt.Sprintf("%s", m.m.Summary)
 }

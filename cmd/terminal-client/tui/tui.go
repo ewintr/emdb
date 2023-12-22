@@ -4,12 +4,10 @@ import (
 	"fmt"
 
 	"ewintr.nl/emdb/cmd/terminal-client/clients"
-	"ewintr.nl/emdb/movie"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 func New(tmdb *clients.TMDB) *tea.Program {
@@ -51,9 +49,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		if !m.ready {
 			m.initialModel(msg.Width, msg.Height)
-		} else {
-			m.logViewport.Width = msg.Width
-			m.logViewport.Height = 10
 		}
 	}
 
@@ -83,11 +78,15 @@ func (m *model) Search() {
 		return
 	}
 
+	m.Log(fmt.Sprintf("found %d results", len(movies)))
 	items := []list.Item{}
-	for _, res := range movies.Results {
-		items = append(items, Movie{m: movie.Movie{Title: res.Title}})
-		fmt.Printf("result: %+v\n", res.Title)
+	for _, res := range movies {
+		items = append(items, Movie{m: res})
+		//fmt.Printf("result: %+v\n", res.Title)
 	}
+	//for i := 0; i < 10; i++ {
+	//	items = append(items, Movie{m: movie.Movie{Title: fmt.Sprintf("title %d", i)}})
+	//}
 
 	m.searchResults.SetItems(items)
 	m.focused = "result"
@@ -97,7 +96,7 @@ func (m model) View() string {
 	if !m.ready {
 		return "\n  Initializing..."
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, m.searchInput.View(), m.searchResults.View(), m.logViewport.View())
+	return fmt.Sprintf("%s\n---\n%s\n---\n%s", m.searchInput.View(), m.searchResults.View(), m.logViewport.View())
 }
 
 func (m *model) initialModel(width, height int) {
@@ -109,7 +108,7 @@ func (m *model) initialModel(width, height int) {
 	m.searchInput = si
 	m.searchInput.Focus()
 
-	m.searchResults = list.New([]list.Item{}, list.NewDefaultDelegate(), width, height-30)
+	m.searchResults = list.New([]list.Item{}, list.NewDefaultDelegate(), width, height-50)
 	m.searchResults.Title = "Search results"
 	m.searchResults.SetShowHelp(false)
 
