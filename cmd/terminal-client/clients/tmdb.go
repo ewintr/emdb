@@ -25,6 +25,12 @@ func NewTMDB(apikey string) (*TMDB, error) {
 }
 
 func (t TMDB) Search(query string) ([]movie.Movie, error) {
+	return []movie.Movie{
+		{Title: "movie1", Year: 2020, Summary: "summary1"},
+		{Title: "movie2", Year: 2020, Summary: "summary2"},
+		{Title: "movie3", Year: 2020, Summary: "summary3"},
+	}, nil
+
 	results, err := t.c.GetSearchMovies(query, nil)
 	if err != nil {
 		return nil, err
