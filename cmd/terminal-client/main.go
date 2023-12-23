@@ -2,28 +2,23 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 
-	"ewintr.nl/emdb/cmd/terminal-client/clients"
 	"ewintr.nl/emdb/cmd/terminal-client/tui"
 )
 
 func main() {
-	tdb, err := clients.NewTMDB(os.Getenv("TMDB_API_KEY"))
+	p, err := tui.New(tui.Config{
+		TMDBAPIKey:  os.Getenv("TMDB_API_KEY"),
+		EMDBAPIKey:  os.Getenv("EMDB_API_KEY"),
+		EMDBBaseURL: "https://emdb.ewintr.nl",
+	})
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	p := tui.New(tdb)
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
-
-}
-
-type EMDBClient struct {
-	c *http.Client
 }

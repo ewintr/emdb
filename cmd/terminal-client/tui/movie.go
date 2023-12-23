@@ -3,11 +3,11 @@ package tui
 import (
 	"fmt"
 
-	"ewintr.nl/emdb/movie"
+	"ewintr.nl/emdb/model"
 )
 
 type Movie struct {
-	m movie.Movie
+	m model.Movie
 }
 
 func (m Movie) FilterValue() string {

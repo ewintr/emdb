@@ -3,7 +3,7 @@ package tui
 import (
 	"fmt"
 
-	"ewintr.nl/emdb/cmd/terminal-client/clients"
+	"ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -11,7 +11,7 @@ import (
 )
 
 type modelSearch struct {
-	tmdb          *clients.TMDB
+	tmdb          *client.TMDB
 	focused       string
 	searchInput   textinput.Model
 	searchResults list.Model

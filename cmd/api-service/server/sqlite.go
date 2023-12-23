@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"ewintr.nl/emdb/movie"
+	"ewintr.nl/emdb/model"
 	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
 )
@@ -59,7 +59,7 @@ func NewSQLite(dbPath string) (*SQLite, error) {
 	return s, nil
 }
 
-func (s *SQLite) Store(m *movie.Movie) error {
+func (s *SQLite) Store(m *model.Movie) error {
 	if m.ID == "" {
 		m.ID = uuid.New().String()
 	}
@@ -92,7 +92,7 @@ func (s *SQLite) Delete(id string) error {
 	return nil
 }
 
-func (s *SQLite) FindOne(id string) (*movie.Movie, error) {
+func (s *SQLite) FindOne(id string) (*model.Movie, error) {
 	row := s.db.QueryRow(`
 SELECT tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
 FROM movie
@@ -101,7 +101,7 @@ WHERE id=?`, id)
 		return nil, row.Err()
 	}
 
-	m := &movie.Movie{
+	m := &model.Movie{
 		ID: id,
 	}
 	var directors string
@@ -113,7 +113,7 @@ WHERE id=?`, id)
 	return m, nil
 }
 
-func (s *SQLite) FindAll() ([]*movie.Movie, error) {
+func (s *SQLite) FindAll() ([]*model.Movie, error) {
 	rows, err := s.db.Query(`
 SELECT tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
 FROM movie`)
@@ -121,10 +121,10 @@ FROM movie`)
 		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 
-	movies := make([]*movie.Movie, 0)
+	movies := make([]*model.Movie, 0)
 	defer rows.Close()
 	for rows.Next() {
-		m := &movie.Movie{}
+		m := &model.Movie{}
 		var directors string
 		if err := rows.Scan(&m.TMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)

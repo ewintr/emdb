@@ -9,16 +9,16 @@ import (
 	"log/slog"
 	"net/http"
 
-	"ewintr.nl/emdb/movie"
+	"ewintr.nl/emdb/model"
 	"github.com/google/uuid"
 )
 
 type MovieAPI struct {
-	repo   movie.MovieRepository
+	repo   model.MovieRepository
 	logger *slog.Logger
 }
 
-func NewMovieAPI(repo movie.MovieRepository, logger *slog.Logger) *MovieAPI {
+func NewMovieAPI(repo model.MovieRepository, logger *slog.Logger) *MovieAPI {
 	return &MovieAPI{
 		repo:   repo,
 		logger: logger.With("api", "movie"),
@@ -78,7 +78,7 @@ func (api *MovieAPI) Store(w http.ResponseWriter, r *http.Request, urlID string)
 	}
 	defer r.Body.Close()
 
-	var movie *movie.Movie
+	var movie *model.Movie
 	if err := json.Unmarshal(body, &movie); err != nil {
 		Error(w, http.StatusBadRequest, "could not unmarshal request body", err, logger)
 		return
