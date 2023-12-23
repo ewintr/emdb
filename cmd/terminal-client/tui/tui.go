@@ -6,7 +6,6 @@ import (
 
 	"ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -22,6 +21,7 @@ var (
 					Foreground(colorNormalForeground).
 					Padding(0, 1).
 					Border(lipgloss.NormalBorder(), true)
+	logLineCount = 5
 )
 
 func New(conf Config) (*tea.Program, error) {
@@ -57,6 +57,7 @@ type baseModel struct {
 	ready       bool
 	logViewport viewport.Model
 	windowSize  tea.WindowSizeMsg
+	contentSize tea.WindowSizeMsg
 	tabSize     tea.WindowSizeMsg
 }
 
@@ -74,20 +75,20 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
 		case "right", "tab":
-			m.Log("switch to next tab")
 			m.activeTab = min(m.activeTab+1, len(m.Tabs)-1)
 			return m, nil
 		case "left", "shift+tab":
-			m.Log("switch to previous tab")
 			m.activeTab = max(m.activeTab-1, 0)
 			return m, nil
 		}
 	case tea.WindowSizeMsg:
+		m.windowSize = msg
 		if !m.ready {
-			m.windowSize = msg
-			m.Log(fmt.Sprintf("new window size: %dx%d", msg.Width, msg.Height))
-			m.initialModel(msg.Width, msg.Height)
+			m.initialModel()
 		}
+		//m.Log(fmt.Sprintf("new window size: %dx%d", msg.Width, msg.Height))
+		m.setSizes()
+
 	}
 
 	//switch m.focused {
@@ -131,61 +132,77 @@ func (m baseModel) View() string {
 		return "\n  Initializing..."
 	}
 
-	contentWidth := m.windowSize.Width - docStyle.GetHorizontalFrameSize() - docStyle.GetHorizontalFrameSize()
-	m.Log(fmt.Sprintf("content width: %d", contentWidth))
 	doc := strings.Builder{}
-	doc.WriteString(m.renderMenu(contentWidth))
+	doc.WriteString(m.renderMenu())
 	doc.WriteString("\n")
-	doc.WriteString(m.renderTabContent(contentWidth))
+	doc.WriteString(m.renderTabContent())
 	doc.WriteString("\n")
-	doc.WriteString(m.renderLog(contentWidth))
+	doc.WriteString(m.renderLog())
 	return docStyle.Render(doc.String())
 }
 
-func (m *baseModel) renderMenu(width int) string {
+func (m *baseModel) renderMenu() string {
 	var items []string
 	for i, t := range m.Tabs {
 		if i == m.activeTab {
 			items = append(items, lipgloss.NewStyle().
 				Foreground(colorHighLightForeGround).
-				//		Background(lipgloss.ANSIColor(termenv.ANSIBlack)).
 				Render(fmt.Sprintf(" * %s ", t)))
 			continue
 		}
 
 		items = append(items, lipgloss.NewStyle().
 			Foreground(colorNormalForeground).
-			//		Background(lipgloss.ANSIColor(termenv.ANSIBlack)).
 			Render(fmt.Sprintf("   %s ", t)))
 	}
 
-	return lipgloss.PlaceHorizontal(width, lipgloss.Left, lipgloss.JoinHorizontal(lipgloss.Top, items...))
+	return lipgloss.PlaceHorizontal(m.contentSize.Width, lipgloss.Left, lipgloss.JoinHorizontal(lipgloss.Top, items...))
 }
 
-func (m *baseModel) renderTabContent(width int) string {
+func (m *baseModel) renderTabContent() string {
 	content := m.TabContent[m.activeTab]
+	switch m.activeTab {
+	case 0:
+		content = m.movieList.View()
+	case 1:
+		content = "tmdb"
+	}
 
-	return windowStyle.Width(width).Render(content)
+	return windowStyle.Width(m.contentSize.Width).Height(m.contentSize.Height).Render(content)
 }
 
-func (m *baseModel) renderLog(width int) string {
-	return windowStyle.Width(width).Render(m.logViewport.View())
+func (m *baseModel) renderLog() string {
+	return windowStyle.Width(m.contentSize.Width).Height(logLineCount).Render(m.logViewport.View())
 }
 
-func (m *baseModel) initialModel(width, height int) {
+func (m *baseModel) initialModel() {
+	m.movieList = list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
+	m.movieList.Title = "Movies"
+	m.movieList.SetShowHelp(false)
 
-	si := textinput.New()
-	si.Placeholder = "title"
-	si.CharLimit = 156
-	si.Width = 20
-	//m.searchInput = si
-	//m.searchInput.Focus()
-	//
-	//m.searchResults = list.New([]list.Item{}, list.NewDefaultDelegate(), width, height-50)
-	//m.searchResults.Title = "Search results"
-	//m.searchResults.SetShowHelp(false)
+	m.logViewport = viewport.New(0, 0)
+	m.logViewport.KeyMap = viewport.KeyMap{}
 
-	m.Log("fetch emdb movies")
+	m.setSizes()
+	m.refreshMovieList()
+
+	m.ready = true
+}
+
+func (m *baseModel) setSizes() {
+	logHeight := logLineCount + docStyle.GetVerticalFrameSize()
+	menuHeight := 1
+
+	m.contentSize.Width = m.windowSize.Width - windowStyle.GetHorizontalFrameSize() - docStyle.GetHorizontalFrameSize()
+	m.contentSize.Height = m.windowSize.Height - windowStyle.GetVerticalFrameSize() - docStyle.GetVerticalFrameSize() - logHeight - menuHeight
+
+	m.movieList.SetSize(m.contentSize.Width, m.contentSize.Height)
+	m.logViewport.Width = m.contentSize.Width
+	m.logViewport.Height = logLineCount
+}
+
+func (m *baseModel) refreshMovieList() {
+	m.Log("fetch emdb movies...")
 	ems, err := m.emdb.GetMovies()
 	if err != nil {
 		m.Log(err.Error())
@@ -195,14 +212,4 @@ func (m *baseModel) initialModel(width, height int) {
 		items[i] = list.Item(Movie{m: em})
 	}
 	m.Log(fmt.Sprintf("found %d movies in in emdb", len(items)))
-
-	m.movieList = list.New(items, list.NewDefaultDelegate(), width, height-10)
-	m.movieList.Title = "Movies"
-	m.movieList.SetShowHelp(false)
-
-	m.logViewport = viewport.New(width, 10)
-	m.logViewport.SetContent(m.logContent)
-	m.logViewport.KeyMap = viewport.KeyMap{}
-	//m.focused = "search"
-	m.ready = true
 }
