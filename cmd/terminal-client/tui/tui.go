@@ -21,9 +21,7 @@ var (
 					BorderForeground(colorHighLightForeGround).
 					Foreground(colorNormalForeground).
 					Padding(0, 1).
-					Align(lipgloss.Center).
 					Border(lipgloss.NormalBorder(), true)
-	tabPaneStyle = windowStyle.Copy().UnsetBorderTop()
 )
 
 func New(conf Config) (*tea.Program, error) {
@@ -102,14 +100,6 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
-}
-
-func tabBorderWithBottom(left, middle, right string) lipgloss.Border {
-	border := lipgloss.NormalBorder()
-	border.BottomLeft = left
-	border.Bottom = middle
-	border.BottomRight = right
-	return border
 }
 
 func (m *baseModel) Log(msg string) {
