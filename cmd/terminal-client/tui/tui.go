@@ -211,5 +211,6 @@ func (m *baseModel) refreshMovieList() {
 	for i, em := range ems {
 		items[i] = list.Item(Movie{m: em})
 	}
+	m.movieList.SetItems(items)
 	m.Log(fmt.Sprintf("found %d movies in in emdb", len(items)))
 }
