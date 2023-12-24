@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"fmt"
+
 	"ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -58,4 +60,19 @@ func (m emdbTab) View() string {
 
 func (m *emdbTab) Log(s string) {
 	m.logger.Log(s)
+}
+
+func FetchMovieList(emdb *client.EMDB, logger *Logger) tea.Cmd {
+	return func() tea.Msg {
+		logger.Log("fetching emdb movies...")
+		ems, err := emdb.GetMovies()
+		if err != nil {
+			logger.Log(err.Error())
+		}
+
+		//m.list.SetItems(items)
+		logger.Log(fmt.Sprintf("found %d movies in in emdb", len(ems)))
+
+		return Movies(ems)
+	}
 }
