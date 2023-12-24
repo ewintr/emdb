@@ -2,6 +2,7 @@ package tui
 
 import (
 	"ewintr.nl/emdb/client"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -30,8 +31,6 @@ func NewLogger() *Logger {
 	}
 }
 
-type LogMsg tea.Msg
-
 func (l *Logger) SetProgram(p *tea.Program) {
 	l.p = p
 }
@@ -42,14 +41,11 @@ func (l *Logger) Log(s string) {
 
 type TabSizeMsgType tea.WindowSizeMsg
 
-func New(conf Config, logger *Logger) (*tea.Program, error) {
-	tmdb, err := client.NewTMDB(conf.TMDBAPIKey)
-	if err != nil {
-		return nil, err
-	}
-	emdb := client.NewEMDB(conf.EMDBBaseURL, conf.EMDBAPIKey)
-	m, _ := NewBaseModel(emdb, tmdb, logger)
+func New(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (*tea.Program, error) {
+	logViewport := viewport.New(0, 0)
+	logViewport.KeyMap = viewport.KeyMap{}
 
+	m, _ := NewBaseModel(emdb, tmdb, logger)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 
 	return p, nil
