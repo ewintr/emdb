@@ -1,37 +1,32 @@
 package tui
 
 import (
-	"ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type emdbTab struct {
+type tabEMDB struct {
 	initialized bool
 	list        list.Model
-	emdb        *client.EMDB
-	logger      *Logger
 }
 
-func NewEMDBTab(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
+func NewTabEMDB() (tea.Model, tea.Cmd) {
 	list := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	list.Title = "Movies"
 	list.SetShowHelp(false)
 
-	m := emdbTab{
-		emdb:   emdb,
-		logger: logger,
-		list:   list,
+	m := tabEMDB{
+		list: list,
 	}
 
-	return m, FetchMovieList(emdb, logger)
+	return m, FetchMovieList()
 }
 
-func (m emdbTab) Init() tea.Cmd {
+func (m tabEMDB) Init() tea.Cmd {
 	return nil
 }
 
-func (m emdbTab) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -52,10 +47,6 @@ func (m emdbTab) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m emdbTab) View() string {
+func (m tabEMDB) View() string {
 	return m.list.View()
-}
-
-func (m *emdbTab) Log(s string) {
-	m.logger.Log(s)
 }
