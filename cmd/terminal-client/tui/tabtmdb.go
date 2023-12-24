@@ -34,28 +34,34 @@ func (m tabTMDB) Init() tea.Cmd {
 func (m tabTMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
-	m.Log(fmt.Sprintf("%v", msg))
 
 	switch msg := msg.(type) {
 	case TabSizeMsgType:
 		if !m.initialized {
-			m.Log(fmt.Sprintf("tmdb initialized. focused: %s", m.focused))
 			m.initialModel(msg.Width, msg.Height)
 		}
 		m.initialized = true
-		m.searchResults.SetSize(msg.Width, msg.Height-10)
+		m.searchResults.SetSize(msg.Width, msg.Height)
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "enter":
+			switch m.focused {
+			case "search":
+				cmds = append(cmds, SearchTMDB(m.tmdb, m.searchInput.Value()))
+				m.searchInput.Blur()
+				m.Log("search tmdb...")
+			}
 		}
+	case Movies:
+		m.Log(fmt.Sprintf("found %d movies in in tmdb", len(msg)))
+		m.searchResults.SetItems(msg.listItems())
+		m.focused = "result"
 	}
 
-	m.Log(fmt.Sprintf("focused: %s", m.focused))
 	switch m.focused {
 	case "search":
-		m.Log("search")
 		m.searchInput, cmd = m.searchInput.Update(msg)
 	case "result":
-		m.Log("result")
 		m.searchResults, cmd = m.searchResults.Update(msg)
 	}
 	cmds = append(cmds, cmd)
@@ -86,20 +92,12 @@ func (m *tabTMDB) initialModel(width, height int) {
 	m.focused = "search"
 }
 
-//func (m *model) Search() {
-//	m.Log("start search")
-//	movies, err := m.tmdb.Search(m.searchInput.Value())
-//	if err != nil {
-//		m.Log(fmt.Sprintf("error: %v", err))
-//		return
-//	}
-//
-//	m.Log(fmt.Sprintf("found %d results", len(movies)))
-//	items := []list.Item{}
-//	for _, res := range movies {
-//		items = append(items, Movie{m: res})
-//	}
-//
-//	m.searchResults.SetItems(items)
-//	m.focused = "result"
-//}
+func SearchTMDB(tmdb *client.TMDB, query string) tea.Cmd {
+	return func() tea.Msg {
+		tms, err := tmdb.Search(query)
+		if err != nil {
+			return err
+		}
+		return Movies(tms)
+	}
+}

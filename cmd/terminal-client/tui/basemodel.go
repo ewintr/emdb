@@ -7,7 +7,6 @@ import (
 	"ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type baseModel struct {
@@ -76,7 +75,8 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Height: m.contentSize.Height,
 		}
 		cmds = append(cmds, m.tabs.Update(tabSize))
-		m.Log("done with resize")
+	case error:
+		m.Log(fmt.Sprintf("ERROR: %s", msg.Error()))
 	default:
 		cmds = append(cmds, m.tabs.Update(msg))
 	}
@@ -97,17 +97,8 @@ func (m baseModel) View() string {
 		return "\n  Initializing..."
 	}
 
-	doc := strings.Builder{}
-	doc.WriteString(lipgloss.PlaceHorizontal(m.contentSize.Width, lipgloss.Left, m.tabs.ViewMenu()))
-	doc.WriteString("\n")
-	doc.WriteString(m.tabs.ViewContent())
-	doc.WriteString("\n")
-	doc.WriteString(m.renderLog())
-	return docStyle.Render(doc.String())
-}
-
-func (m *baseModel) renderLog() string {
-	return windowStyle.Width(m.contentSize.Width).Height(logLineCount).Render(m.logViewport.View())
+	logWindow := windowStyle.Width(m.contentSize.Width).Height(logLineCount).Render(m.logViewport.View())
+	return docStyle.Render(fmt.Sprintf("%s\n%s", m.tabs.View(), logWindow))
 }
 
 func (m *baseModel) setSize() {

@@ -12,6 +12,7 @@ type TabSet struct {
 	order  []string
 	title  map[string]string
 	tabs   map[string]tea.Model
+	size   TabSizeMsgType
 }
 
 func NewTabSet() *TabSet {
@@ -52,6 +53,7 @@ func (t *TabSet) Update(msg tea.Msg) tea.Cmd {
 			t.tabs[name], cmd = t.tabs[name].Update(msg)
 			cmds = append(cmds, cmd)
 		}
+		t.size = msg.(TabSizeMsgType)
 	default:
 		name := t.order[t.active]
 		t.tabs[name], cmd = t.tabs[name].Update(msg)
@@ -61,7 +63,7 @@ func (t *TabSet) Update(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (t *TabSet) ViewMenu() string {
+func (t *TabSet) View() string {
 	var items []string
 	for i, name := range t.order {
 		if i == t.active {
@@ -75,11 +77,9 @@ func (t *TabSet) ViewMenu() string {
 			Foreground(colorNormalForeground).
 			Render(fmt.Sprintf("   %s ", t.title[name])))
 	}
-	return lipgloss.JoinHorizontal(lipgloss.Top, items...)
+	menu := lipgloss.JoinHorizontal(lipgloss.Top, items...)
+	pane := t.tabs[t.order[t.active]].View()
+	lipgloss.PlaceHorizontal(t.size.Width, lipgloss.Left, menu)
 
-	//return
-}
-
-func (t *TabSet) ViewContent() string {
-	return t.tabs[t.order[t.active]].View()
+	return fmt.Sprintf("%s\n%s", menu, pane)
 }

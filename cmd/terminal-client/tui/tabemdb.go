@@ -26,7 +26,8 @@ func NewTabEMDB(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
 		list:   list,
 	}
 
-	return m, FetchMovieList(emdb, logger)
+	logger.Log("search emdb...")
+	return m, FetchMovieList(emdb)
 }
 
 func (m tabEMDB) Init() tea.Cmd {
@@ -44,6 +45,7 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.list.SetSize(msg.Width, msg.Height)
 	case Movies:
+		m.logger.Log(fmt.Sprintf("found %d movies in in emdb", len(msg)))
 		m.list.SetItems(msg.listItems())
 	}
 
@@ -61,17 +63,12 @@ func (m *tabEMDB) Log(s string) {
 	m.logger.Log(s)
 }
 
-func FetchMovieList(emdb *client.EMDB, logger *Logger) tea.Cmd {
+func FetchMovieList(emdb *client.EMDB) tea.Cmd {
 	return func() tea.Msg {
-		logger.Log("fetching emdb movies...")
 		ems, err := emdb.GetMovies()
 		if err != nil {
-			logger.Log(err.Error())
+			return err
 		}
-
-		//m.list.SetItems(items)
-		logger.Log(fmt.Sprintf("found %d movies in in emdb", len(ems)))
-
 		return Movies(ems)
 	}
 }
