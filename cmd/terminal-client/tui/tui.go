@@ -31,13 +31,8 @@ func NewLogger() *Logger {
 	}
 }
 
-func (l *Logger) SetProgram(p *tea.Program) {
-	l.p = p
-}
-
-func (l *Logger) Log(s string) {
-	l.Lines = append(l.Lines, s)
-}
+func (l *Logger) SetProgram(p *tea.Program) { l.p = p }
+func (l *Logger) Log(s string)              { l.Lines = append(l.Lines, s) }
 
 type TabSizeMsgType tea.WindowSizeMsg
 

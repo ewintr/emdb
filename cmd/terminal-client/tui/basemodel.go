@@ -13,8 +13,7 @@ import (
 type baseModel struct {
 	emdb        *client.EMDB
 	tmdb        *client.TMDB
-	Tabs        []string
-	TabContent  tea.Model
+	tabs        *TabSet
 	activeTab   int
 	initialized bool
 	logger      *Logger
@@ -31,7 +30,7 @@ func NewBaseModel(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (tea.Mod
 	m := baseModel{
 		emdb:        emdb,
 		tmdb:        tmdb,
-		Tabs:        []string{"Erik's movie database", "The movie database"},
+		tabs:        NewTabSet(),
 		logViewport: logViewport,
 		logger:      logger,
 	}
@@ -54,19 +53,22 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
 		case "right", "tab":
-			m.TabContent, cmd = m.nextTab()
-			cmds = append(cmds, cmd)
-			return m, tea.Batch(cmds...)
+			m.tabs.Next()
 		case "left", "shift+tab":
-			m.TabContent, cmd = m.prevTab()
-			cmds = append(cmds, cmd)
-			return m, tea.Batch(cmds...)
+			m.tabs.Previous()
+		default:
+			cmds = append(cmds, m.tabs.Update(msg))
 		}
 	case tea.WindowSizeMsg:
 		m.windowSize = msg
 		if !m.initialized {
-			m.TabContent, cmd = NewTabEMDB(m.emdb, m.logger)
+			var emdbTab, tmdbTab tea.Model
+			emdbTab, cmd = NewTabEMDB(m.emdb, m.logger)
 			cmds = append(cmds, cmd)
+			tmdbTab, cmd = NewTabTMDB(m.tmdb, m.logger)
+			cmds = append(cmds, cmd)
+			m.tabs.AddTab("emdb", "EMDB", emdbTab)
+			m.tabs.AddTab("tmdb", "TMDB", tmdbTab)
 			m.initialized = true
 		}
 		m.Log(fmt.Sprintf("new window size: %dx%d", msg.Width, msg.Height))
@@ -75,13 +77,11 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Width:  m.contentSize.Width,
 			Height: m.contentSize.Height,
 		}
-		m.TabContent, cmd = m.TabContent.Update(tabSize)
-		cmds = append(cmds, cmd)
+		cmds = append(cmds, m.tabs.Update(tabSize))
 		m.Log("done with resize")
+	default:
+		cmds = append(cmds, m.tabs.Update(msg))
 	}
-
-	m.TabContent, cmd = m.TabContent.Update(msg)
-	cmds = append(cmds, cmd)
 
 	m.logViewport.SetContent(strings.Join(m.logger.Lines, "\n"))
 	m.logViewport.GotoBottom()
@@ -100,24 +100,12 @@ func (m baseModel) View() string {
 	}
 
 	doc := strings.Builder{}
-	doc.WriteString(m.renderMenu())
+	doc.WriteString(lipgloss.PlaceHorizontal(m.contentSize.Width, lipgloss.Left, m.tabs.ViewMenu()))
 	doc.WriteString("\n")
-	doc.WriteString(m.renderTabContent())
+	doc.WriteString(m.tabs.ViewContent())
 	doc.WriteString("\n")
 	doc.WriteString(m.renderLog())
 	return docStyle.Render(doc.String())
-}
-
-func (m *baseModel) nextTab() (tea.Model, tea.Cmd) {
-	m.activeTab = min(m.activeTab+1, len(m.Tabs)-1)
-
-	return m.newTab()
-}
-
-func (m *baseModel) prevTab() (tea.Model, tea.Cmd) {
-	m.activeTab = max(m.activeTab-1, 0)
-
-	return m.newTab()
 }
 
 func (m *baseModel) newTab() (tea.Model, tea.Cmd) {
@@ -129,29 +117,6 @@ func (m *baseModel) newTab() (tea.Model, tea.Cmd) {
 	default:
 		return nil, nil
 	}
-}
-
-func (m *baseModel) renderMenu() string {
-	var items []string
-	for i, t := range m.Tabs {
-		if i == m.activeTab {
-			items = append(items, lipgloss.NewStyle().
-				Foreground(colorHighLightForeGround).
-				Render(fmt.Sprintf(" * %s ", t)))
-			continue
-		}
-
-		items = append(items, lipgloss.NewStyle().
-			Foreground(colorNormalForeground).
-			Render(fmt.Sprintf("   %s ", t)))
-	}
-
-	return lipgloss.PlaceHorizontal(m.contentSize.Width, lipgloss.Left, lipgloss.JoinHorizontal(lipgloss.Top, items...))
-}
-
-func (m *baseModel) renderTabContent() string {
-	content := m.TabContent.View()
-	return windowStyle.Width(m.contentSize.Width).Height(m.contentSize.Height).Render(content)
 }
 
 func (m *baseModel) renderLog() string {
