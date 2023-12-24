@@ -1,21 +1,21 @@
 package tui
 
 import (
+	"fmt"
+
 	"ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-//focused       string
-//searchInput   textinput.Model
-//searchResults list.Model
-//movieLis
-
 type tabTMDB struct {
-	initialized bool
-	results     list.Model
-	tmdb        *client.TMDB
-	logger      *Logger
+	initialized   bool
+	focused       string
+	searchInput   textinput.Model
+	searchResults list.Model
+	tmdb          *client.TMDB
+	logger        *Logger
 }
 
 func NewTabTMDB(tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
@@ -34,23 +34,56 @@ func (m tabTMDB) Init() tea.Cmd {
 func (m tabTMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
+	m.Log(fmt.Sprintf("%v", msg))
 
 	switch msg := msg.(type) {
+	case TabSizeMsgType:
+		if !m.initialized {
+			m.Log(fmt.Sprintf("tmdb initialized. focused: %s", m.focused))
+			m.initialModel(msg.Width, msg.Height)
+		}
+		m.initialized = true
+		m.searchResults.SetSize(msg.Width, msg.Height-10)
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q", "esc":
-			return m, tea.Quit
 		}
 	}
 
-	m.results, cmd = m.results.Update(msg)
+	m.Log(fmt.Sprintf("focused: %s", m.focused))
+	switch m.focused {
+	case "search":
+		m.Log("search")
+		m.searchInput, cmd = m.searchInput.Update(msg)
+	case "result":
+		m.Log("result")
+		m.searchResults, cmd = m.searchResults.Update(msg)
+	}
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
 
 func (m tabTMDB) View() string {
-	return "tmdb"
+	return fmt.Sprintf("%s\n%s\n", m.searchInput.View(), m.searchResults.View())
+}
+
+func (m *tabTMDB) Log(s string) {
+	m.logger.Log(s)
+}
+
+func (m *tabTMDB) initialModel(width, height int) {
+	si := textinput.New()
+	si.Placeholder = "title"
+	si.CharLimit = 156
+	si.Width = 20
+	m.searchInput = si
+	m.searchInput.Focus()
+
+	m.searchResults = list.New([]list.Item{}, list.NewDefaultDelegate(), width, height-50)
+	m.searchResults.Title = "Search results"
+	m.searchResults.SetShowHelp(false)
+
+	m.focused = "search"
 }
 
 //func (m *model) Search() {

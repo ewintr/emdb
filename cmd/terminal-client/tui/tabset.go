@@ -44,10 +44,21 @@ func (t *TabSet) Previous() {
 
 func (t *TabSet) Update(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
-	name := t.order[t.active]
-	t.tabs[name], cmd = t.tabs[name].Update(msg)
+	var cmds []tea.Cmd
 
-	return cmd
+	switch msg.(type) {
+	case TabSizeMsgType:
+		for _, name := range t.order {
+			t.tabs[name], cmd = t.tabs[name].Update(msg)
+			cmds = append(cmds, cmd)
+		}
+	default:
+		name := t.order[t.active]
+		t.tabs[name], cmd = t.tabs[name].Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return tea.Batch(cmds...)
 }
 
 func (t *TabSet) ViewMenu() string {

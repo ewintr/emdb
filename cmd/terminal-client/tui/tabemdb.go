@@ -40,7 +40,6 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case TabSizeMsgType:
 		if !m.initialized {
-			//cmds = append(cmds, FetchMovieList(m.emdb, m.logger))
 			m.initialized = true
 		}
 		m.list.SetSize(msg.Width, msg.Height)

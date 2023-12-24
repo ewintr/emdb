@@ -17,7 +17,7 @@ var (
 					Foreground(colorNormalForeground).
 					Padding(0, 1).
 					Border(lipgloss.NormalBorder(), true)
-	logLineCount = 5
+	logLineCount = 10
 )
 
 type Logger struct {

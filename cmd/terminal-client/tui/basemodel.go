@@ -14,13 +14,11 @@ type baseModel struct {
 	emdb        *client.EMDB
 	tmdb        *client.TMDB
 	tabs        *TabSet
-	activeTab   int
 	initialized bool
 	logger      *Logger
 	logViewport viewport.Model
 	windowSize  tea.WindowSizeMsg
 	contentSize tea.WindowSizeMsg
-	tabSize     tea.WindowSizeMsg
 }
 
 func NewBaseModel(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
@@ -106,17 +104,6 @@ func (m baseModel) View() string {
 	doc.WriteString("\n")
 	doc.WriteString(m.renderLog())
 	return docStyle.Render(doc.String())
-}
-
-func (m *baseModel) newTab() (tea.Model, tea.Cmd) {
-	switch m.activeTab {
-	case 0:
-		return NewTabEMDB(m.emdb, m.logger)
-	case 1:
-		return NewTabTMDB(m.tmdb, m.logger)
-	default:
-		return nil, nil
-	}
 }
 
 func (m *baseModel) renderLog() string {
