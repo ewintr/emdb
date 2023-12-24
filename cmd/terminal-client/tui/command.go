@@ -3,12 +3,11 @@ package tui
 import (
 	"fmt"
 
+	"ewintr.nl/emdb/client"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type FetchMoviesCmd tea.Cmd
-
-func FetchMovieList() tea.Cmd {
+func FetchMovieList(emdb *client.EMDB, logger *Logger) tea.Cmd {
 	return func() tea.Msg {
 		logger.Log("fetching emdb movies...")
 		ems, err := emdb.GetMovies()

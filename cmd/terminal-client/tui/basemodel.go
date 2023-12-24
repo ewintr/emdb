@@ -4,29 +4,36 @@ import (
 	"fmt"
 	"strings"
 
+	"ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type baseModel struct {
+	emdb        *client.EMDB
+	tmdb        *client.TMDB
 	Tabs        []string
 	TabContent  tea.Model
 	activeTab   int
 	initialized bool
+	logger      *Logger
 	logViewport viewport.Model
 	windowSize  tea.WindowSizeMsg
 	contentSize tea.WindowSizeMsg
 	tabSize     tea.WindowSizeMsg
 }
 
-func NewBaseModel() (tea.Model, tea.Cmd) {
+func NewBaseModel(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	logViewport := viewport.New(0, 0)
 	logViewport.KeyMap = viewport.KeyMap{}
 
 	m := baseModel{
+		emdb:        emdb,
+		tmdb:        tmdb,
 		Tabs:        []string{"Erik's movie database", "The movie database"},
 		logViewport: logViewport,
+		logger:      logger,
 	}
 	m.setSize()
 
@@ -56,11 +63,11 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.windowSize = msg
 		if !m.initialized {
-			m.TabContent, cmd = NewTabEMDB()
+			m.TabContent, cmd = NewEMDBTab(m.emdb, m.logger)
 			cmds = append(cmds, cmd)
 			m.initialized = true
 		}
-		logger.Log(fmt.Sprintf("new window size: %dx%d", msg.Width, msg.Height))
+		m.Log(fmt.Sprintf("new window size: %dx%d", msg.Width, msg.Height))
 		m.setSize()
 		tabSize := TabSizeMsgType{
 			Width:  m.contentSize.Width,
@@ -68,19 +75,21 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.TabContent, cmd = m.TabContent.Update(tabSize)
 		cmds = append(cmds, cmd)
-		logger.Log("done with resize")
-		//case FetchMoviesCmd:
-		//	cmds = append(cmds, FetchMovieList(m.emdb, m.logger))
+		m.Log("done with resize")
 	}
 
 	m.TabContent, cmd = m.TabContent.Update(msg)
 	cmds = append(cmds, cmd)
 
-	m.logViewport.SetContent(logger.Content())
+	m.logViewport.SetContent(strings.Join(m.logger.Lines, "\n"))
 	m.logViewport.GotoBottom()
 	m.logViewport, cmd = m.logViewport.Update(msg)
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m *baseModel) Log(msg string) {
+	m.logger.Log(msg)
 }
 
 func (m baseModel) View() string {

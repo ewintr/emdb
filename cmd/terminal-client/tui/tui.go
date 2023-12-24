@@ -1,11 +1,8 @@
 package tui
 
 import (
-	"fmt"
-	"os"
-	"strings"
-
 	"ewintr.nl/emdb/client"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -21,10 +18,6 @@ var (
 					Padding(0, 1).
 					Border(lipgloss.NormalBorder(), true)
 	logLineCount = 5
-
-	emdb   *client.EMDB
-	tmdb   *client.TMDB
-	logger = NewLogger()
 )
 
 type Logger struct {
@@ -46,27 +39,14 @@ func (l *Logger) Log(s string) {
 	l.Lines = append(l.Lines, s)
 }
 
-func (l *Logger) Content() string {
-	if l.Lines == nil {
-		return "logger not initialized"
-	}
-
-	return strings.Join(l.Lines, "\n")
-}
-
 type TabSizeMsgType tea.WindowSizeMsg
 
-func New(emdb *client.EMDB, tmdb *client.TMDB) (*tea.Program, error) {
-	emdb = emdb
-	tmdb = tmdb
+func New(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (*tea.Program, error) {
+	logViewport := viewport.New(0, 0)
+	logViewport.KeyMap = viewport.KeyMap{}
 
-	fmt.Printf("emdb: %v\n", emdb)
-	os.Exit(0)
-
-	m, _ := NewBaseModel()
+	m, _ := NewBaseModel(emdb, tmdb, logger)
 	p := tea.NewProgram(m, tea.WithAltScreen())
-
-	logger.SetProgram(p)
 
 	return p, nil
 }

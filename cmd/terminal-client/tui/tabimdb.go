@@ -1,13 +1,5 @@
 package tui
 
-import "ewintr.nl/emdb/client"
-
-type tabTMDB struct {
-	initialized bool
-	tmdb        *client.TMDB
-	logger      *Logger
-}
-
 //focused       string
 //searchInput   textinput.Model
 //searchResults list.Model
