@@ -54,16 +54,18 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
 		case "right", "tab":
-			m.activeTab = min(m.activeTab+1, len(m.Tabs)-1)
-			return m, nil
+			m.TabContent, cmd = m.nextTab()
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
 		case "left", "shift+tab":
-			m.activeTab = max(m.activeTab-1, 0)
-			return m, nil
+			m.TabContent, cmd = m.prevTab()
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
 		}
 	case tea.WindowSizeMsg:
 		m.windowSize = msg
 		if !m.initialized {
-			m.TabContent, cmd = NewEMDBTab(m.emdb, m.logger)
+			m.TabContent, cmd = NewTabEMDB(m.emdb, m.logger)
 			cmds = append(cmds, cmd)
 			m.initialized = true
 		}
@@ -104,6 +106,29 @@ func (m baseModel) View() string {
 	doc.WriteString("\n")
 	doc.WriteString(m.renderLog())
 	return docStyle.Render(doc.String())
+}
+
+func (m *baseModel) nextTab() (tea.Model, tea.Cmd) {
+	m.activeTab = min(m.activeTab+1, len(m.Tabs)-1)
+
+	return m.newTab()
+}
+
+func (m *baseModel) prevTab() (tea.Model, tea.Cmd) {
+	m.activeTab = max(m.activeTab-1, 0)
+
+	return m.newTab()
+}
+
+func (m *baseModel) newTab() (tea.Model, tea.Cmd) {
+	switch m.activeTab {
+	case 0:
+		return NewTabEMDB(m.emdb, m.logger)
+	case 1:
+		return NewTabTMDB(m.tmdb, m.logger)
+	default:
+		return nil, nil
+	}
 }
 
 func (m *baseModel) renderMenu() string {
