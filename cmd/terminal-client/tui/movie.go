@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"ewintr.nl/emdb/model"
+	"github.com/charmbracelet/bubbles/list"
 )
 
 type Movie struct {
@@ -20,4 +21,14 @@ func (m Movie) Title() string {
 
 func (m Movie) Description() string {
 	return fmt.Sprintf("%s", m.m.Summary)
+}
+
+type Movies []model.Movie
+
+func (ms Movies) listItems() []list.Item {
+	items := []list.Item{}
+	for _, m := range ms {
+		items = append(items, Movie{m: m})
+	}
+	return items
 }

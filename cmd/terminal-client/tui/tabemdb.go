@@ -1,25 +1,30 @@
 package tui
 
 import (
-	"fmt"
-
+	"ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type emdbTab struct {
-	ready  bool
-	list   list.Model
-	parent *baseModel
-	logger *Logger
+	initialized bool
+	list        list.Model
+	emdb        *client.EMDB
+	logger      *Logger
 }
 
-func NewEMDBTab(parent *baseModel, logger *Logger) tea.Model {
-	m := emdbTab{}
-	m.parent = parent
-	m.logger = logger
+func NewEMDBTab(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
+	list := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
+	list.Title = "Movies"
+	list.SetShowHelp(false)
 
-	return m
+	m := emdbTab{
+		emdb:   emdb,
+		logger: logger,
+		list:   list,
+	}
+
+	return m, FetchMovieList(emdb, logger)
 }
 
 func (m emdbTab) Init() tea.Cmd {
@@ -32,10 +37,13 @@ func (m emdbTab) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case TabSizeMsgType:
-		if !m.ready {
-			m.initialModel()
+		if !m.initialized {
+			//cmds = append(cmds, FetchMovieList(m.emdb, m.logger))
+			m.initialized = true
 		}
 		m.list.SetSize(msg.Width, msg.Height)
+	case Movies:
+		m.list.SetItems(msg.listItems())
 	}
 
 	m.list, cmd = m.list.Update(msg)
@@ -48,29 +56,6 @@ func (m emdbTab) View() string {
 	return m.list.View()
 }
 
-func (m *emdbTab) initialModel() {
-	m.list = list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	m.list.Title = "Movies"
-	m.list.SetShowHelp(false)
-	m.refreshMovieList()
-	m.ready = true
-}
-
 func (m *emdbTab) Log(s string) {
 	m.logger.Log(s)
-}
-
-func (m *emdbTab) refreshMovieList() {
-	m.Log("fetch emdb movies...")
-	ems, err := m.parent.emdb.GetMovies()
-	if err != nil {
-		m.Log(err.Error())
-	}
-	items := make([]list.Item, len(ems))
-	for i, em := range ems {
-		items[i] = list.Item(Movie{m: em})
-	}
-	m.list.SetItems(items)
-	m.Log(fmt.Sprintf("found %d movies in in emdb", len(items)))
-
 }

@@ -43,19 +43,12 @@ func (l *Logger) Log(s string) {
 type TabSizeMsgType tea.WindowSizeMsg
 
 func New(conf Config, logger *Logger) (*tea.Program, error) {
-	tabs := []string{"Erik's movie database", "The movie database"}
 	tmdb, err := client.NewTMDB(conf.TMDBAPIKey)
 	if err != nil {
 		return nil, err
 	}
-	m := baseModel{
-		config: conf,
-		emdb:   client.NewEMDB(conf.EMDBBaseURL, conf.EMDBAPIKey),
-		tmdb:   tmdb,
-		Tabs:   tabs,
-		logger: logger,
-	}
-	m.TabContent = NewEMDBTab(&m, m.logger)
+	emdb := client.NewEMDB(conf.EMDBBaseURL, conf.EMDBAPIKey)
+	m, _ := NewBaseModel(emdb, tmdb, logger)
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 

@@ -11,18 +11,33 @@ import (
 )
 
 type baseModel struct {
-	config      Config
 	emdb        *client.EMDB
 	tmdb        *client.TMDB
 	Tabs        []string
 	TabContent  tea.Model
 	activeTab   int
-	ready       bool
+	initialized bool
 	logger      *Logger
 	logViewport viewport.Model
 	windowSize  tea.WindowSizeMsg
 	contentSize tea.WindowSizeMsg
 	tabSize     tea.WindowSizeMsg
+}
+
+func NewBaseModel(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
+	logViewport := viewport.New(0, 0)
+	logViewport.KeyMap = viewport.KeyMap{}
+
+	m := baseModel{
+		emdb:        emdb,
+		tmdb:        tmdb,
+		Tabs:        []string{"Erik's movie database", "The movie database"},
+		logViewport: logViewport,
+		logger:      logger,
+	}
+	m.setSize()
+
+	return m, nil
 }
 
 func (m baseModel) Init() tea.Cmd {
@@ -47,8 +62,10 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		m.windowSize = msg
-		if !m.ready {
-			m.initialModel()
+		if !m.initialized {
+			m.TabContent, cmd = NewEMDBTab(m.emdb, m.logger)
+			cmds = append(cmds, cmd)
+			m.initialized = true
 		}
 		m.Log(fmt.Sprintf("new window size: %dx%d", msg.Width, msg.Height))
 		m.setSize()
@@ -76,7 +93,7 @@ func (m *baseModel) Log(msg string) {
 }
 
 func (m baseModel) View() string {
-	if !m.ready {
+	if !m.initialized {
 		return "\n  Initializing..."
 	}
 
@@ -114,14 +131,6 @@ func (m *baseModel) renderTabContent() string {
 
 func (m *baseModel) renderLog() string {
 	return windowStyle.Width(m.contentSize.Width).Height(logLineCount).Render(m.logViewport.View())
-}
-
-func (m *baseModel) initialModel() {
-	m.logViewport = viewport.New(0, 0)
-	m.logViewport.KeyMap = viewport.KeyMap{}
-	m.setSize()
-
-	m.ready = true
 }
 
 func (m *baseModel) setSize() {
