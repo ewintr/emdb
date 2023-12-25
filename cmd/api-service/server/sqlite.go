@@ -113,7 +113,7 @@ func (s *SQLite) Delete(id string) error {
 
 func (s *SQLite) FindOne(id string) (*model.Movie, error) {
 	row := s.db.QueryRow(`
-SELECT tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
+SELECT id, tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
 FROM movie
 WHERE id=?`, id)
 	if row.Err() != nil {
@@ -134,7 +134,7 @@ WHERE id=?`, id)
 
 func (s *SQLite) FindAll() ([]*model.Movie, error) {
 	rows, err := s.db.Query(`
-SELECT tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
+SELECT id, tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
 FROM movie`)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
@@ -145,7 +145,7 @@ FROM movie`)
 	for rows.Next() {
 		m := &model.Movie{}
 		var directors string
-		if err := rows.Scan(&m.TMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
+		if err := rows.Scan(&m.ID, &m.TMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 		}
 		m.Directors = strings.Split(directors, ",")
