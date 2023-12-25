@@ -35,6 +35,7 @@ func (l *Logger) SetProgram(p *tea.Program) { l.p = p }
 func (l *Logger) Log(s string)              { l.Lines = append(l.Lines, s) }
 
 type TabSizeMsgType tea.WindowSizeMsg
+type NewMovie Movie
 
 func New(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (*tea.Program, error) {
 	logViewport := viewport.New(0, 0)

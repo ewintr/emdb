@@ -10,16 +10,18 @@ import (
 )
 
 type tabTMDB struct {
+	emdb          *client.EMDB
+	tmdb          *client.TMDB
 	initialized   bool
 	focused       string
 	searchInput   textinput.Model
 	searchResults list.Model
-	tmdb          *client.TMDB
 	logger        *Logger
 }
 
-func NewTabTMDB(tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
+func NewTabTMDB(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	m := tabTMDB{
+		emdb:   emdb,
 		tmdb:   tmdb,
 		logger: logger,
 	}
@@ -50,6 +52,11 @@ func (m tabTMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, SearchTMDB(m.tmdb, m.searchInput.Value()))
 				m.searchInput.Blur()
 				m.Log("search tmdb...")
+			case "result":
+				movie := m.searchResults.SelectedItem().(Movie)
+				m.Log(fmt.Sprintf("selected movie %s", movie.Title))
+				cmds = append(cmds, ImportMovie(m.emdb, movie))
+
 			}
 		}
 	case Movies:
@@ -99,5 +106,16 @@ func SearchTMDB(tmdb *client.TMDB, query string) tea.Cmd {
 			return err
 		}
 		return Movies(tms)
+	}
+}
+
+func ImportMovie(emdb *client.EMDB, movie Movie) tea.Cmd {
+	return func() tea.Msg {
+		newMovie, err := emdb.AddMovie(movie.m)
+		if err != nil {
+			return err
+		}
+
+		return NewMovie(Movie{m: newMovie})
 	}
 }

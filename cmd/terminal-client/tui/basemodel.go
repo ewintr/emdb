@@ -62,7 +62,7 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var emdbTab, tmdbTab tea.Model
 			emdbTab, cmd = NewTabEMDB(m.emdb, m.logger)
 			cmds = append(cmds, cmd)
-			tmdbTab, cmd = NewTabTMDB(m.tmdb, m.logger)
+			tmdbTab, cmd = NewTabTMDB(m.emdb, m.tmdb, m.logger)
 			cmds = append(cmds, cmd)
 			m.tabs.AddTab("emdb", "EMDB", emdbTab)
 			m.tabs.AddTab("tmdb", "TMDB", tmdbTab)
@@ -75,6 +75,9 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Height: m.contentSize.Height,
 		}
 		cmds = append(cmds, m.tabs.Update(tabSize))
+	case NewMovie:
+		m.Log(fmt.Sprintf("imported movie %s", msg.m.Title))
+		cmd = m.tabs.Update(msg)
 	case error:
 		m.Log(fmt.Sprintf("ERROR: %s", msg.Error()))
 	default:

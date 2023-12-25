@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -49,4 +50,40 @@ func (e *EMDB) GetMovies() ([]model.Movie, error) {
 	}
 
 	return movies, nil
+}
+
+func (e *EMDB) AddMovie(movie model.Movie) (model.Movie, error) {
+	body, err := json.Marshal(movie)
+	if err != nil {
+		return model.Movie{}, err
+	}
+
+	url := fmt.Sprintf("%s/movie", e.baseURL)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return model.Movie{}, err
+	}
+	req.Header.Add("Authorization", e.apiKey)
+
+	resp, err := e.c.Do(req)
+	if err != nil {
+		return model.Movie{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return model.Movie{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	newBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return model.Movie{}, err
+	}
+	defer resp.Body.Close()
+
+	var newMovie model.Movie
+	if err := json.Unmarshal(newBody, &newMovie); err != nil {
+		return model.Movie{}, err
+	}
+
+	return newMovie, nil
 }

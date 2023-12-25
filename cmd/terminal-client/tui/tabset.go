@@ -43,6 +43,15 @@ func (t *TabSet) Previous() {
 	}
 }
 
+func (t *TabSet) Select(name string) {
+	for i, n := range t.order {
+		if n == name {
+			t.active = i
+			return
+		}
+	}
+}
+
 func (t *TabSet) Update(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
@@ -54,6 +63,9 @@ func (t *TabSet) Update(msg tea.Msg) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 		t.size = msg.(TabSizeMsgType)
+	//case ImportMovieMsg:
+	//	t.Select("emdb")
+	//	t.tabs["emdb"], cmd = t.tabs["emdb"].Update(msg)
 	default:
 		name := t.order[t.active]
 		t.tabs[name], cmd = t.tabs[name].Update(msg)
