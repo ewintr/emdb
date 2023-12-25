@@ -124,7 +124,7 @@ WHERE id=?`, id)
 		ID: id,
 	}
 	var directors string
-	if err := row.Scan(&m.IMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
+	if err := row.Scan(&m.ID, &m.IMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 	m.Directors = strings.Split(directors, ",")

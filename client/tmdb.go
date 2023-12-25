@@ -24,14 +24,6 @@ func NewTMDB(apikey string) (*TMDB, error) {
 	}, nil
 }
 
-//func (t TMDB) Search(query string) ([]model.Movie, error) {
-//	return []model.Movie{
-//		{Title: "movie1", Year: 2020, Summary: "summary1"},
-//		{Title: "movie2", Year: 2020, Summary: "summary2"},
-//		{Title: "movie3", Year: 2020, Summary: "summary3"},
-//	}, nil
-//}
-
 func (t TMDB) Search(query string) ([]model.Movie, error) {
 	results, err := t.c.GetSearchMovies(query, nil)
 	if err != nil {
@@ -50,7 +42,9 @@ func (t TMDB) Search(query string) ([]model.Movie, error) {
 }
 
 func (t TMDB) GetMovie(id int64) (model.Movie, error) {
-	result, err := t.c.GetMovieDetails(int(id), nil)
+	result, err := t.c.GetMovieDetails(int(id), map[string]string{
+		"append_to_response": "credits",
+	})
 	if err != nil {
 		return model.Movie{}, err
 	}
@@ -60,11 +54,21 @@ func (t TMDB) GetMovie(id int64) (model.Movie, error) {
 		year = release.Year()
 	}
 
+	directors := make([]string, 0)
+	for crew := range result.Credits.Crew {
+		if result.Credits.Crew[crew].Job == "Director" {
+			directors = append(directors, result.Credits.Crew[crew].Name)
+		}
+	}
+
 	return model.Movie{
-		Title:   result.Title,
-		TMDBID:  result.ID,
-		Year:    year,
-		Summary: result.Overview,
+		Title:        result.OriginalTitle,
+		EnglishTitle: result.Title,
+		TMDBID:       result.ID,
+		IMDBID:       result.IMDbID,
+		Year:         year,
+		Directors:    directors,
+		Summary:      result.Overview,
 	}, nil
 
 }
