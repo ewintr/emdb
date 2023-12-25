@@ -38,25 +38,28 @@ func (m tabTMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case TabSizeMsgType:
+	case TabSizeMsg:
 		if !m.initialized {
 			m.initialModel(msg.Width, msg.Height)
 		}
 		m.initialized = true
 		m.searchResults.SetSize(msg.Width, msg.Height)
+	case TabResetMsg:
+		m.searchInput.SetValue("")
+		m.searchResults.SetItems([]list.Item{})
+		m.searchInput.Focus()
+		m.focused = "search"
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
 			switch m.focused {
 			case "search":
-				cmds = append(cmds, SearchTMDB(m.tmdb, m.searchInput.Value()))
+				cmds = append(cmds, m.SearchTMDBCmd(m.searchInput.Value()))
 				m.searchInput.Blur()
 				m.Log("search tmdb...")
 			case "result":
 				movie := m.searchResults.SelectedItem().(Movie)
-				m.Log(fmt.Sprintf("selected movie %s", movie.Title))
-				cmds = append(cmds, ImportMovie(m.emdb, movie))
-
+				cmds = append(cmds, m.ImportMovieCmd(movie), m.ResetCmd())
 			}
 		}
 	case Movies:
@@ -99,9 +102,9 @@ func (m *tabTMDB) initialModel(width, height int) {
 	m.focused = "search"
 }
 
-func SearchTMDB(tmdb *client.TMDB, query string) tea.Cmd {
+func (m *tabTMDB) SearchTMDBCmd(query string) tea.Cmd {
 	return func() tea.Msg {
-		tms, err := tmdb.Search(query)
+		tms, err := m.tmdb.Search(query)
 		if err != nil {
 			return err
 		}
@@ -109,13 +112,19 @@ func SearchTMDB(tmdb *client.TMDB, query string) tea.Cmd {
 	}
 }
 
-func ImportMovie(emdb *client.EMDB, movie Movie) tea.Cmd {
+func (m *tabTMDB) ImportMovieCmd(movie Movie) tea.Cmd {
 	return func() tea.Msg {
-		newMovie, err := emdb.AddMovie(movie.m)
+		newMovie, err := m.emdb.AddMovie(movie.m)
 		if err != nil {
 			return err
 		}
 
 		return NewMovie(Movie{m: newMovie})
+	}
+}
+
+func (m *tabTMDB) ResetCmd() tea.Cmd {
+	return func() tea.Msg {
+		return TabResetMsg("tmdb")
 	}
 }

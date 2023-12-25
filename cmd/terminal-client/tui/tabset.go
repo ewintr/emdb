@@ -7,12 +7,15 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type TabSizeMsg tea.WindowSizeMsg
+type TabResetMsg string
+
 type TabSet struct {
 	active int
 	order  []string
 	title  map[string]string
 	tabs   map[string]tea.Model
-	size   TabSizeMsgType
+	size   TabSizeMsg
 }
 
 func NewTabSet() *TabSet {
@@ -57,12 +60,16 @@ func (t *TabSet) Update(msg tea.Msg) tea.Cmd {
 	var cmds []tea.Cmd
 
 	switch msg.(type) {
-	case TabSizeMsgType:
+	case TabSizeMsg:
 		for _, name := range t.order {
 			t.tabs[name], cmd = t.tabs[name].Update(msg)
 			cmds = append(cmds, cmd)
 		}
-		t.size = msg.(TabSizeMsgType)
+		t.size = msg.(TabSizeMsg)
+	case TabResetMsg:
+		name := string(msg.(TabResetMsg))
+		t.tabs[name], cmd = t.tabs[name].Update(msg)
+
 	//case ImportMovieMsg:
 	//	t.Select("emdb")
 	//	t.tabs["emdb"], cmd = t.tabs["emdb"].Update(msg)

@@ -64,20 +64,21 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 			tmdbTab, cmd = NewTabTMDB(m.emdb, m.tmdb, m.logger)
 			cmds = append(cmds, cmd)
-			m.tabs.AddTab("emdb", "EMDB", emdbTab)
+			m.tabs.AddTab("emdb", "Watched movies", emdbTab)
 			m.tabs.AddTab("tmdb", "TMDB", tmdbTab)
 			m.initialized = true
 		}
 		m.Log(fmt.Sprintf("new window size: %dx%d", msg.Width, msg.Height))
 		m.setSize()
-		tabSize := TabSizeMsgType{
+		tabSize := TabSizeMsg{
 			Width:  m.contentSize.Width,
 			Height: m.contentSize.Height,
 		}
 		cmds = append(cmds, m.tabs.Update(tabSize))
 	case NewMovie:
 		m.Log(fmt.Sprintf("imported movie %s", msg.m.Title))
-		cmd = m.tabs.Update(msg)
+		m.tabs.Select("emdb")
+		cmds = append(cmds, FetchMovieList(m.emdb))
 	case error:
 		m.Log(fmt.Sprintf("ERROR: %s", msg.Error()))
 	default:

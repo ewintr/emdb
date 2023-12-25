@@ -39,7 +39,7 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case TabSizeMsgType:
+	case TabSizeMsg:
 		if !m.initialized {
 			m.initialized = true
 		}

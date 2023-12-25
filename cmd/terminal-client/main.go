@@ -15,7 +15,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	emdb := client.NewEMDB("https://emdb.ewintr.nl", os.Getenv("EMDB_API_KEY"))
+	emdb := client.NewEMDB(os.Getenv("EMDB_BASE_URL"), os.Getenv("EMDB_API_KEY"))
 
 	p, err := tui.New(emdb, tmdb, logger)
 	if err != nil {
