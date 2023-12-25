@@ -29,6 +29,25 @@ var sqliteMigrations = []sqliteMigration{
 	`INSERT INTO system (latest_sync) VALUES (0)`,
 	`ALTER TABLE movie ADD COLUMN tmdb_id INTEGER NOT NULL DEFAULT 0`,
 	`ALTER TABLE movie ADD COLUMN summary TEXT NOT NULL DEFAULT ""`,
+	`BEGIN TRANSACTION;
+		CREATE TABLE movie_new (
+			"id" TEXT UNIQUE NOT NULL,
+			"imdb_id" TEXT UNIQUE NOT NULL DEFAULT "",
+			"tmdb_id" INTEGER UNIQUE NOT NULL DEFAULT 0,
+			"title" TEXT NOT NULL DEFAULT "",
+			"english_title" TEXT NOT NULL DEFAULT "",
+			"year" INTEGER NOT NULL DEFAULT 0,
+			"directors" TEXT NOT NULL DEFAULT "",
+			"summary" TEXT NOT NULL DEFAULT "",
+			"watched_on" TEXT NOT NULL DEFAULT "",
+			"rating" INTEGER NOT NULL DEFAULT 0,
+			"comment" TEXT NOT NULL DEFAULT ""
+		);
+		INSERT INTO movie_new (id, imdb_id, tmdb_id, title, english_title, year, directors, summary, watched_on, rating, comment)
+		SELECT id, imdb_id, tmdb_id, title, english_title, year, directors, summary, watched_on, rating, comment FROM movie;
+		DROP TABLE movie;
+		ALTER TABLE movie_new RENAME TO movie;
+	COMMIT`,
 }
 
 var (
