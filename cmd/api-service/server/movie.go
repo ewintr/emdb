@@ -111,7 +111,13 @@ func (api *MovieAPI) Store(w http.ResponseWriter, r *http.Request, urlID string)
 func (api *MovieAPI) Delete(w http.ResponseWriter, r *http.Request, urlID string) {
 	logger := api.logger.With("method", "delete")
 
-	if err := api.repo.Delete(urlID); err != nil {
+	err := api.repo.Delete(urlID)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"message":"not found"}`)
+		return
+	case err != nil:
 		Error(w, http.StatusInternalServerError, "could not delete movie", err, logger)
 		return
 	}
