@@ -9,4 +9,4 @@ build-api:
 	go build -o emdb-api ./cmd/api-service/service.go
 
 deploy-api:
-	ssh ewintr.nl deploy/emdb-api.sh
+	ssh ewintr.nl deploy-emdb-api.sh
