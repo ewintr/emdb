@@ -92,7 +92,7 @@ func (s *SQLite) Store(m *model.Movie) error {
 	directors := strings.Join(m.Directors, ",")
 	if _, err := s.db.Exec(`REPLACE INTO movie (id, tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment) 
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		m.ID, m.IMDBID, m.IMDBID, m.Title, m.EnglishTitle, m.Year, directors, m.Summary, m.WatchedOn, m.Rating, m.Comment); err != nil {
+		m.ID, m.TMDBID, m.IMDBID, m.Title, m.EnglishTitle, m.Year, directors, m.Summary, m.WatchedOn, m.Rating, m.Comment); err != nil {
 		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
 	}
 
