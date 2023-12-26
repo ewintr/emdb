@@ -69,10 +69,6 @@ func (t *TabSet) Update(msg tea.Msg) tea.Cmd {
 	case TabResetMsg:
 		name := string(msg.(TabResetMsg))
 		t.tabs[name], cmd = t.tabs[name].Update(msg)
-
-	//case ImportMovieMsg:
-	//	t.Select("emdb")
-	//	t.tabs["emdb"], cmd = t.tabs["emdb"].Update(msg)
 	default:
 		name := t.order[t.active]
 		t.tabs[name], cmd = t.tabs[name].Update(msg)

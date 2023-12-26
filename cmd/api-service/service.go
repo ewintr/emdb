@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	port   = flag.Int("port", 8080, "port to listen on")
+	port   = flag.Int("port", 8085, "port to listen on")
 	dbPath = flag.String("dbpath", "test.db", "path to sqlite db")
 	apiKey = flag.String("apikey", "hoi", "api key to use")
 )
