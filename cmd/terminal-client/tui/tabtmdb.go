@@ -114,7 +114,7 @@ func (m *tabTMDB) SearchTMDBCmd(query string) tea.Cmd {
 
 func (m *tabTMDB) ImportMovieCmd(movie Movie) tea.Cmd {
 	return func() tea.Msg {
-		newMovie, err := m.emdb.AddMovie(movie.m)
+		newMovie, err := m.emdb.CreateMovie(movie.m)
 		if err != nil {
 			return err
 		}

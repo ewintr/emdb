@@ -13,6 +13,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var (
+	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	noStyle      = lipgloss.NewStyle()
+)
+
 type UpdateForm tea.Msg
 type StoredMovie struct{}
 
@@ -36,14 +42,6 @@ func NewTabEMDB(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	list.SetShowHelp(false)
 
 	formLabels := []string{
-		"ID",
-		"TMDB ID",
-		"IMDB ID",
-		"Title",
-		"English Title",
-		"Year",
-		"Director",
-		"Summary",
 		"Rating",
 		"Comment",
 	}
@@ -95,10 +93,8 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.logger.Log("stored movie, fetching movie list")
 		cmds = append(cmds, FetchMovieList(m.emdb))
 	case tea.KeyMsg:
-		m.Log("key msg")
 		switch m.mode {
 		case "edit":
-			m.Log("processing edit mode")
 			switch msg.String() {
 			case "tab", "shift+tab", "up", "down":
 				s := msg.String()
@@ -115,10 +111,14 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				for i := 0; i <= len(m.formInputs)-1; i++ {
 					if i == m.formFocus {
+						m.formInputs[i].PromptStyle = focusedStyle
+						m.formInputs[i].TextStyle = focusedStyle
 						cmds = append(cmds, m.formInputs[i].Focus())
 						continue
 					}
 					m.formInputs[i].Blur()
+					m.formInputs[i].PromptStyle = noStyle
+					m.formInputs[i].TextStyle = noStyle
 				}
 			case "enter":
 				m.mode = "view"
@@ -127,18 +127,17 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, m.updateFormInputs(msg))
 			}
 		default:
-			m.Log("processing view mode")
 			switch msg.String() {
 			case "up":
 				m.list, cmd = m.list.Update(msg)
 				cmds = append(cmds, cmd)
-				m.SetForm(m.list.SelectedItem().(Movie))
 			case "down":
 				m.list, cmd = m.list.Update(msg)
 				cmds = append(cmds, cmd)
-				m.SetForm(m.list.SelectedItem().(Movie))
 			case "e":
 				m.mode = "edit"
+				m.formFocus = 0
+				m.formInputs[0].Focus()
 			}
 		}
 	}
@@ -156,35 +155,59 @@ func (m *tabEMDB) updateFormInputs(msg tea.Msg) tea.Cmd {
 }
 
 func (m tabEMDB) View() string {
-	labels := make([]string, len(m.formLabels))
-	for i := range m.formLabels {
-		labels[i] = fmt.Sprintf("%s: ", m.formLabels[i])
-	}
-	fields := make([]string, len(m.formLabels))
-	for i := range m.formLabels {
-		fields[i] = m.formInputs[i].View()
-	}
-	labelView := strings.Join(labels, "\n")
-	fieldsView := strings.Join(fields, "\n")
-	form := lipgloss.JoinHorizontal(lipgloss.Top, labelView, fieldsView)
-
 	colLeft := lipgloss.NewStyle().Width(m.colWidth).Render(m.list.View())
-	colRight := lipgloss.NewStyle().Width(m.colWidth).Render(form)
+	colRight := lipgloss.NewStyle().Width(m.colWidth).Render(m.ViewForm())
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, colLeft, colRight)
 }
 
-func (m *tabEMDB) SetForm(movie Movie) {
-	m.formInputs[0].SetValue(movie.m.ID)
-	m.formInputs[1].SetValue(fmt.Sprintf("%d", movie.m.TMDBID))
-	m.formInputs[2].SetValue(movie.m.IMDBID)
-	m.formInputs[3].SetValue(movie.m.Title)
-	m.formInputs[4].SetValue(movie.m.EnglishTitle)
-	m.formInputs[5].SetValue(fmt.Sprintf("%d", movie.m.Year))
-	m.formInputs[6].SetValue(strings.Join(movie.m.Directors, ","))
-	m.formInputs[7].SetValue(movie.m.Summary)
-	m.formInputs[8].SetValue(fmt.Sprintf("%d", movie.m.Rating))
+func (m *tabEMDB) UpdateForm() {
+	movie, ok := m.list.SelectedItem().(Movie)
+	if !ok {
+		return
+	}
+
+	m.formInputs[0].SetValue(fmt.Sprintf("%d", movie.m.Rating))
 	m.formInputs[9].SetValue(movie.m.Comment)
+}
+
+func (m *tabEMDB) ViewForm() string {
+	movie, ok := m.list.SelectedItem().(Movie)
+	if !ok {
+		return ""
+	}
+
+	labels := []string{
+		"ID: ",
+		"TMDBID: ",
+		"IMDBID: ",
+		"Title",
+		"English title",
+		"Year",
+		"Directors",
+		"Summary",
+	}
+	for _, l := range m.formLabels {
+		labels = append(labels, fmt.Sprintf("%s: ", l))
+	}
+
+	fields := []string{
+		movie.m.ID,
+		fmt.Sprintf("%d", movie.m.TMDBID),
+		movie.m.IMDBID,
+		movie.m.Title,
+		movie.m.EnglishTitle,
+		fmt.Sprintf("%d", movie.m.Year),
+		strings.Join(movie.m.Directors, ","),
+		movie.m.Summary,
+	}
+	for _, f := range m.formInputs {
+		fields = append(fields, f.View())
+	}
+	labelView := strings.Join(labels, "\n")
+	fieldsView := strings.Join(fields, "\n")
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, labelView, fieldsView)
 }
 
 func (m *tabEMDB) StoreMovie() tea.Cmd {
@@ -216,7 +239,7 @@ func (m *tabEMDB) StoreMovie() tea.Cmd {
 			},
 		}
 		m.Log(fmt.Sprintf("storing movie %s", movie.Title()))
-		if _, err := m.emdb.AddMovie(movie.m); err != nil {
+		if _, err := m.emdb.CreateMovie(movie.m); err != nil {
 			return err
 		}
 		return StoredMovie{}
