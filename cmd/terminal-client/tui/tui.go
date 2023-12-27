@@ -36,6 +36,22 @@ func (l *Logger) Log(s string)              { l.Lines = append(l.Lines, s) }
 
 type NewMovie Movie
 
+type NextTabSelected struct{}
+
+func SelectNextTab() tea.Cmd {
+	return func() tea.Msg {
+		return NextTabSelected{}
+	}
+}
+
+type PrevTabSelected struct{}
+
+func SelectPrevTab() tea.Cmd {
+	return func() tea.Msg {
+		return PrevTabSelected{}
+	}
+}
+
 func New(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (*tea.Program, error) {
 	logViewport := viewport.New(0, 0)
 	logViewport.KeyMap = viewport.KeyMap{}

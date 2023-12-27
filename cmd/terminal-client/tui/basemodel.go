@@ -45,17 +45,10 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q", "esc":
-			return m, tea.Quit
-		case "right", "tab":
-			m.tabs.Next()
-		case "left", "shift+tab":
-			m.tabs.Previous()
-		default:
-			cmds = append(cmds, m.tabs.Update(msg))
-		}
+	case NextTabSelected:
+		m.tabs.Next()
+	case PrevTabSelected:
+		m.tabs.Previous()
 	case tea.WindowSizeMsg:
 		m.windowSize = msg
 		if !m.initialized {

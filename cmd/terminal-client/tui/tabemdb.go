@@ -128,6 +128,12 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		default:
 			switch msg.String() {
+			case "ctrl+c", "q", "esc":
+				return m, tea.Quit
+			case "right", "tab":
+				cmds = append(cmds, SelectNextTab())
+			case "left", "shift+tab":
+				cmds = append(cmds, SelectPrevTab())
 			case "up":
 				m.list, cmd = m.list.Update(msg)
 				cmds = append(cmds, cmd)

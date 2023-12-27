@@ -51,6 +51,12 @@ func (m tabTMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.focused = "search"
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "ctrl+c", "q", "esc":
+			return m, tea.Quit
+		case "right", "tab":
+			cmds = append(cmds, SelectNextTab())
+		case "left", "shift+tab":
+			cmds = append(cmds, SelectPrevTab())
 		case "enter":
 			switch m.focused {
 			case "search":
