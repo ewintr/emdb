@@ -86,6 +86,7 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.logger.Log(fmt.Sprintf("found %d movies in in emdb", len(msg)))
 		m.list.SetItems(msg.listItems())
 		m.list.Select(0)
+		m.UpdateForm()
 		m.list, cmd = m.list.Update(msg)
 		cmds = append(cmds, cmd)
 	case StoredMovie:
@@ -149,9 +150,9 @@ func (m *tabEMDB) UpdateForm() {
 	if !ok {
 		return
 	}
-
+ m.Log(fmt.Sprintf("id: %s, rating: %d", movie.m.ID, movie.m.Rating))
 	m.formInputs[0].SetValue(fmt.Sprintf("%d", movie.m.Rating))
-	m.formInputs[9].SetValue(movie.m.Comment)
+	m.formInputs[1].SetValue(movie.m.Comment)
 }
 
 func (m *tabEMDB) ViewForm() string {
@@ -225,14 +226,15 @@ func (m *tabEMDB) StoreMovie() tea.Cmd {
 	return func() tea.Msg {
 		updatedMovie := m.list.SelectedItem().(Movie)
 		var err error
-		movie := m.list.SelectedItem().(Movie)
+		m.Log(fmt.Sprintf("form field: %T - %v", m.formInputs[0].Value(), m.formInputs[0].Value()))
 		if updatedMovie.m.Rating, err = strconv.Atoi(m.formInputs[0].Value()); err != nil {
 			return fmt.Errorf("rating cannot be converted to an int: %w", err)
 		}
-		movie.m.Comment = m.formInputs[1].Value()
-
-		m.Log(fmt.Sprintf("storing movie %s", movie.Title()))
-		if _, err := m.emdb.CreateMovie(movie.m); err != nil {
+		m.Log(fmt.Sprintf("result: %d", updatedMovie.m.Rating)) 
+		updatedMovie.m.Comment = m.formInputs[1].Value()
+		m.Log(fmt.Sprintf("storing movie %s", updatedMovie.Title()))
+		m.Log(fmt.Sprintf("with rating %v", updatedMovie.m.Rating))
+		if _, err := m.emdb.CreateMovie(updatedMovie.m); err != nil {
 			return err
 		}
 		return StoredMovie{}
