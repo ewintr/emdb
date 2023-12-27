@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"ewintr.nl/emdb/client"
-	"ewintr.nl/emdb/model"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -97,29 +96,7 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "edit":
 			switch msg.String() {
 			case "tab", "shift+tab", "up", "down":
-				s := msg.String()
-				if s == "up" || s == "shift+tab" {
-					m.formFocus--
-				} else {
-					m.formFocus++
-				}
-				if m.formFocus > len(m.formInputs) {
-					m.formFocus = 0
-				}
-				if m.formFocus < 0 {
-					m.formFocus = len(m.formInputs)
-				}
-				for i := 0; i <= len(m.formInputs)-1; i++ {
-					if i == m.formFocus {
-						m.formInputs[i].PromptStyle = focusedStyle
-						m.formInputs[i].TextStyle = focusedStyle
-						cmds = append(cmds, m.formInputs[i].Focus())
-						continue
-					}
-					m.formInputs[i].Blur()
-					m.formInputs[i].PromptStyle = noStyle
-					m.formInputs[i].TextStyle = noStyle
-				}
+				cmds = append(cmds, m.NavigateForm(msg.String())...)
 			case "enter":
 				m.mode = "view"
 				cmds = append(cmds, m.StoreMovie())
@@ -216,34 +193,44 @@ func (m *tabEMDB) ViewForm() string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, labelView, fieldsView)
 }
 
+func (m *tabEMDB) NavigateForm(key string) []tea.Cmd {
+	var cmds []tea.Cmd
+	if key == "up" || key == "shift+tab" {
+		m.formFocus--
+	} else {
+		m.formFocus++
+	}
+	if m.formFocus > len(m.formInputs) {
+		m.formFocus = 0
+	}
+	if m.formFocus < 0 {
+		m.formFocus = len(m.formInputs)
+	}
+	for i := 0; i <= len(m.formInputs)-1; i++ {
+		if i == m.formFocus {
+			m.formInputs[i].PromptStyle = focusedStyle
+			m.formInputs[i].TextStyle = focusedStyle
+			cmds = append(cmds, m.formInputs[i].Focus())
+			continue
+		}
+		m.formInputs[i].Blur()
+		m.formInputs[i].PromptStyle = noStyle
+		m.formInputs[i].TextStyle = noStyle
+	}
+
+	return cmds
+}
+
 func (m *tabEMDB) StoreMovie() tea.Cmd {
 	return func() tea.Msg {
-		tmdbId, err := strconv.Atoi(m.formInputs[1].Value())
-		if err != nil {
-			return fmt.Errorf("tmbID cannot be converted to an int: %w", err)
-		}
-		year, err := strconv.Atoi(m.formInputs[5].Value())
-		if err != nil {
-			return fmt.Errorf("year cannot be converted to an int: %w", err)
-		}
-		rating, err := strconv.Atoi(m.formInputs[8].Value())
-		if err != nil {
+		updatedMovie := m.list.SelectedItem().(Movie)
+		var err error
+		movie := m.list.SelectedItem().(Movie)
+		if updatedMovie.m.Rating, err = strconv.Atoi(m.formInputs[0].Value()); err != nil {
 			return fmt.Errorf("rating cannot be converted to an int: %w", err)
 		}
-		movie := Movie{
-			m: model.Movie{
-				ID:           m.formInputs[0].Value(),
-				TMDBID:       int64(tmdbId),
-				IMDBID:       m.formInputs[2].Value(),
-				Title:        m.formInputs[3].Value(),
-				EnglishTitle: m.formInputs[4].Value(),
-				Year:         year,
-				Directors:    strings.Split(m.formInputs[6].Value(), ","),
-				Summary:      m.formInputs[7].Value(),
-				Rating:       rating,
-				Comment:      m.formInputs[9].Value(),
-			},
-		}
+		movie.m.Comment = m.formInputs[1].Value()
+
 		m.Log(fmt.Sprintf("storing movie %s", movie.Title()))
 		if _, err := m.emdb.CreateMovie(movie.m); err != nil {
 			return err
