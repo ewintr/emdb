@@ -41,6 +41,7 @@ func NewTabEMDB(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	list.SetShowHelp(false)
 
 	formLabels := []string{
+		"Watched on",
 		"Rating",
 		"Comment",
 	}
@@ -114,9 +115,11 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, SelectPrevTab())
 			case "up":
 				m.list, cmd = m.list.Update(msg)
+				m.UpdateForm()
 				cmds = append(cmds, cmd)
 			case "down":
 				m.list, cmd = m.list.Update(msg)
+				m.UpdateForm()
 				cmds = append(cmds, cmd)
 			case "e":
 				m.mode = "edit"
@@ -150,9 +153,10 @@ func (m *tabEMDB) UpdateForm() {
 	if !ok {
 		return
 	}
- m.Log(fmt.Sprintf("id: %s, rating: %d", movie.m.ID, movie.m.Rating))
-	m.formInputs[0].SetValue(fmt.Sprintf("%d", movie.m.Rating))
-	m.formInputs[1].SetValue(movie.m.Comment)
+	m.Log(fmt.Sprintf("updating form with movie %s", movie.m.Title))
+	m.formInputs[0].SetValue(movie.m.WatchedOn)
+	m.formInputs[1].SetValue(fmt.Sprintf("%d", movie.m.Rating))
+	m.formInputs[2].SetValue(movie.m.Comment)
 }
 
 func (m *tabEMDB) ViewForm() string {
@@ -225,15 +229,12 @@ func (m *tabEMDB) NavigateForm(key string) []tea.Cmd {
 func (m *tabEMDB) StoreMovie() tea.Cmd {
 	return func() tea.Msg {
 		updatedMovie := m.list.SelectedItem().(Movie)
+		updatedMovie.m.WatchedOn = m.formInputs[0].Value()
 		var err error
-		m.Log(fmt.Sprintf("form field: %T - %v", m.formInputs[0].Value(), m.formInputs[0].Value()))
-		if updatedMovie.m.Rating, err = strconv.Atoi(m.formInputs[0].Value()); err != nil {
+		if updatedMovie.m.Rating, err = strconv.Atoi(m.formInputs[1].Value()); err != nil {
 			return fmt.Errorf("rating cannot be converted to an int: %w", err)
 		}
-		m.Log(fmt.Sprintf("result: %d", updatedMovie.m.Rating)) 
-		updatedMovie.m.Comment = m.formInputs[1].Value()
-		m.Log(fmt.Sprintf("storing movie %s", updatedMovie.Title()))
-		m.Log(fmt.Sprintf("with rating %v", updatedMovie.m.Rating))
+		updatedMovie.m.Comment = m.formInputs[2].Value()
 		if _, err := m.emdb.CreateMovie(updatedMovie.m); err != nil {
 			return err
 		}
