@@ -86,7 +86,7 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case Movies:
 		m.logger.Log(fmt.Sprintf("found %d movies in in emdb", len(msg)))
 		m.list.SetItems(msg.listItems())
-		m.list.Select(0)
+		m.list.Select(len(msg.listItems()) - 1)
 		m.UpdateForm()
 		m.list, cmd = m.list.Update(msg)
 		cmds = append(cmds, cmd)
@@ -153,7 +153,6 @@ func (m *tabEMDB) UpdateForm() {
 	if !ok {
 		return
 	}
-	m.Log(fmt.Sprintf("updating form with movie %s", movie.m.Title))
 	m.formInputs[0].SetValue(movie.m.WatchedOn)
 	m.formInputs[1].SetValue(fmt.Sprintf("%d", movie.m.Rating))
 	m.formInputs[2].SetValue(movie.m.Comment)
