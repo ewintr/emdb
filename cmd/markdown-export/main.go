@@ -44,7 +44,15 @@ func main() {
 
 	for _, m := range movies {
 		filename := fmt.Sprintf("%s.md", slugify.Slugify(m.EnglishTitle))
-		filePath := fmt.Sprintf("%s/%s", path, filename)
+
+		watchedOn := strings.Split(m.WatchedOn, "-")
+		watchedOnYear := watchedOn[0]
+
+		if err := os.MkdirAll(fmt.Sprintf("%s/%s", path, watchedOnYear), os.ModePerm); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		filePath := fmt.Sprintf("%s/%s/%s", path, watchedOnYear, filename)
 		f, err := os.Create(filePath)
 		if err != nil {
 			fmt.Println(err)
