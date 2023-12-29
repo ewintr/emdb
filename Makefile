@@ -8,6 +8,9 @@ run-tui-local:
 run-tui:
 	go run ./cmd/terminal-client/main.go
 
+run-md-export:
+	go run ./cmd/markdown-export/main.go
+
 
 build-api:
 	go build -o emdb-api ./cmd/api-service/service.go
