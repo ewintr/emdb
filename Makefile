@@ -1,4 +1,8 @@
 
+# Define source and destination directories
+MD_SRC_DIR := public
+MD_DST_DIR := ../ewintr.nl/content/movies
+
 run-api:
 	go run ./cmd/api-service/service.go -apikey localOnly
 
@@ -10,6 +14,11 @@ run-tui:
 
 run-md-export:
 	go run ./cmd/markdown-export/main.go
+	for dir in $(MD_SRC_DIR)/*; do \
+   		if [ -n "$$(ls -A $$dir)" ]; then \
+   			cp -r $$dir/* $(MD_DST_DIR)/`basename $$dir`; \
+   		fi \
+   	done
 
 
 build-api:
