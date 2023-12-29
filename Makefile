@@ -20,6 +20,9 @@ run-md-export:
    		fi \
    	done
 
+run-worker:
+	go run ./cmd/worker/main.go
+
 
 build-api:
 	go build -o emdb-api ./cmd/api-service/service.go

@@ -1,13 +1,11 @@
-package server
+package moviestore
 
 import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
+	"time"
 
-	"ewintr.nl/emdb/model"
-	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
 )
 
@@ -48,6 +46,23 @@ var sqliteMigrations = []sqliteMigration{
 		DROP TABLE movie;
 		ALTER TABLE movie_new RENAME TO movie;
 	COMMIT`,
+	`CREATE TABLE review (
+		"id" TEXT UNIQUE NOT NULL,
+		"movie_id" TEXT NOT NULL,
+		"source" TEXT NOT NULL DEFAULT "",
+		"url" TEXT NOT NULL DEFAULT "",
+		"review" TEXT NOT NULL DEFAULT ""
+	)`,
+	`CREATE TABLE job_queue (
+		"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+		"movie_id" TEXT NOT NULL,
+		"action" TEXT NOT NULL DEFAULT "",
+		"status" TEXT NOT NULL DEFAULT ""
+	)`,
+	`PRAGMA journal_mode=WAL`,
+	`INSERT INTO job_queue (movie_id, action, status)
+		SELECT id, 'fetch-imdb-reviews', 'todo'
+		FROM movie`,
 }
 
 var (
@@ -67,6 +82,8 @@ func NewSQLite(dbPath string) (*SQLite, error) {
 		return &SQLite{}, fmt.Errorf("%w: %v", ErrInvalidConfiguration, err)
 	}
 
+	_, err = db.Exec(fmt.Sprintf("PRAGMA busy_timeout=%d;", 5*time.Second))
+
 	s := &SQLite{
 		db: db,
 	}
@@ -78,81 +95,16 @@ func NewSQLite(dbPath string) (*SQLite, error) {
 	return s, nil
 }
 
-func (s *SQLite) Store(m *model.Movie) error {
-	if m.ID == "" {
-		m.ID = uuid.New().String()
-	}
-
-	tx, err := s.db.Begin()
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-	}
-	defer tx.Rollback()
-
-	directors := strings.Join(m.Directors, ",")
-	if _, err := s.db.Exec(`REPLACE INTO movie (id, tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment) 
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		m.ID, m.TMDBID, m.IMDBID, m.Title, m.EnglishTitle, m.Year, directors, m.Summary, m.WatchedOn, m.Rating, m.Comment); err != nil {
-		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-	}
-
-	return nil
+func (s *SQLite) Exec(query string, args ...any) (sql.Result, error) {
+	return s.db.Exec(query, args...)
 }
 
-func (s *SQLite) Delete(id string) error {
-	if _, err := s.db.Exec(`DELETE FROM movie WHERE id=?`, id); err != nil {
-		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-	}
-
-	return nil
+func (s *SQLite) QueryRow(query string, args ...any) *sql.Row {
+	return s.db.QueryRow(query, args...)
 }
 
-func (s *SQLite) FindOne(id string) (*model.Movie, error) {
-	row := s.db.QueryRow(`
-SELECT id, tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
-FROM movie
-WHERE id=?`, id)
-	if row.Err() != nil {
-		return nil, row.Err()
-	}
-
-	m := &model.Movie{
-		ID: id,
-	}
-	var directors string
-	if err := row.Scan(&m.ID, &m.TMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrSqliteFailure, err)
-	}
-	m.Directors = strings.Split(directors, ",")
-
-	return m, nil
-}
-
-func (s *SQLite) FindAll() ([]*model.Movie, error) {
-	rows, err := s.db.Query(`
-SELECT id, tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
-FROM movie`)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-	}
-
-	movies := make([]*model.Movie, 0)
-	defer rows.Close()
-	for rows.Next() {
-		m := &model.Movie{}
-		var directors string
-		if err := rows.Scan(&m.ID, &m.TMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-		}
-		m.Directors = strings.Split(directors, ",")
-		movies = append(movies, m)
-	}
-
-	return movies, nil
+func (s *SQLite) Query(query string, args ...any) (*sql.Rows, error) {
+	return s.db.Query(query, args...)
 }
 
 func (s *SQLite) migrate(wanted []sqliteMigration) error {

@@ -1,10 +1,16 @@
-package server
+package handler
 
 import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
+)
+
+type ContextKey string
+
+const (
+	MovieKey = ContextKey("movie")
 )
 
 func Index(w http.ResponseWriter) {

@@ -9,7 +9,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"ewintr.nl/emdb/cmd/api-service/server"
+	"ewintr.nl/emdb/client"
+	"ewintr.nl/emdb/cmd/api-service/handler"
+	"ewintr.nl/emdb/cmd/api-service/moviestore"
 )
 
 var (
@@ -23,17 +25,24 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	logger.Info("starting server", "port", *port, "dbPath", *dbPath)
 
-	repo, err := server.NewSQLite(*dbPath)
+	db, err := moviestore.NewSQLite(*dbPath)
 	if err != nil {
 		fmt.Printf("could not create new sqlite repo: %s", err.Error())
 		os.Exit(1)
 	}
 
-	apis := server.APIIndex{
-		"movie": server.NewMovieAPI(repo, logger),
+	jobQueue := moviestore.NewJobQueue(db, logger)
+	go jobQueue.Run()
+	worker := handler.NewWorker(jobQueue, moviestore.NewMovieRepository(db), moviestore.NewReviewRepository(db), client.NewIMDB(), logger)
+	go worker.Run()
+
+	apis := handler.APIIndex{
+		"movie": handler.NewMovieAPI(handler.APIIndex{
+			"review": handler.NewReviewAPI(moviestore.NewReviewRepository(db), logger),
+		}, moviestore.NewMovieRepository(db), jobQueue, logger),
 	}
 
-	go http.ListenAndServe(fmt.Sprintf(":%d", *port), server.NewServer(*apiKey, apis, logger))
+	go http.ListenAndServe(fmt.Sprintf(":%d", *port), handler.NewServer(*apiKey, apis, logger))
 	logger.Info("server started")
 
 	c := make(chan os.Signal, 1)

@@ -3,12 +3,12 @@ package tui
 import (
 	"fmt"
 
-	"ewintr.nl/emdb/model"
+	"ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/charmbracelet/bubbles/list"
 )
 
 type Movie struct {
-	m model.Movie
+	m moviestore.Movie
 }
 
 func (m Movie) FilterValue() string {
@@ -23,7 +23,7 @@ func (m Movie) Description() string {
 	return fmt.Sprintf("%s", m.m.Summary)
 }
 
-type Movies []model.Movie
+type Movies []moviestore.Movie
 
 func (ms Movies) listItems() []list.Item {
 	items := []list.Item{}

@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"ewintr.nl/emdb/model"
+	"ewintr.nl/emdb/cmd/api-service/moviestore"
 )
 
 type EMDB struct {
@@ -24,7 +24,7 @@ func NewEMDB(baseURL string, apiKey string) *EMDB {
 	}
 }
 
-func (e *EMDB) GetMovies() ([]model.Movie, error) {
+func (e *EMDB) GetMovies() ([]moviestore.Movie, error) {
 	//var movies []model.Movie
 	//for i := 0; i < 5; i++ {
 	//	movies = append(movies, model.Movie{
@@ -55,7 +55,7 @@ func (e *EMDB) GetMovies() ([]model.Movie, error) {
 	body, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 
-	var movies []model.Movie
+	var movies []moviestore.Movie
 	if err := json.Unmarshal(body, &movies); err != nil {
 		return nil, err
 	}
@@ -63,73 +63,73 @@ func (e *EMDB) GetMovies() ([]model.Movie, error) {
 	return movies, nil
 }
 
-func (e *EMDB) CreateMovie(movie model.Movie) (model.Movie, error) {
-	body, err := json.Marshal(movie)
+func (e *EMDB) CreateMovie(m moviestore.Movie) (moviestore.Movie, error) {
+	body, err := json.Marshal(m)
 	if err != nil {
-		return model.Movie{}, err
+		return moviestore.Movie{}, err
 	}
 
 	url := fmt.Sprintf("%s/movie", e.baseURL)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return model.Movie{}, err
+		return moviestore.Movie{}, err
 	}
 	req.Header.Add("Authorization", e.apiKey)
 
 	resp, err := e.c.Do(req)
 	if err != nil {
-		return model.Movie{}, err
+		return moviestore.Movie{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return model.Movie{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return moviestore.Movie{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	newBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return model.Movie{}, err
+		return moviestore.Movie{}, err
 	}
 	defer resp.Body.Close()
 
-	var newMovie model.Movie
+	var newMovie moviestore.Movie
 	if err := json.Unmarshal(newBody, &newMovie); err != nil {
-		return model.Movie{}, err
+		return moviestore.Movie{}, err
 	}
 
 	return newMovie, nil
 }
 
-func (e *EMDB) UpdateMovie(movie model.Movie) (model.Movie, error) {
-	body, err := json.Marshal(movie)
+func (e *EMDB) UpdateMovie(m moviestore.Movie) (moviestore.Movie, error) {
+	body, err := json.Marshal(m)
 	if err != nil {
-		return model.Movie{}, err
+		return moviestore.Movie{}, err
 	}
 
-	url := fmt.Sprintf("%s/movie/%s", e.baseURL, movie.ID)
+	url := fmt.Sprintf("%s/movie/%s", e.baseURL, m.ID)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(body))
 	if err != nil {
-		return model.Movie{}, err
+		return moviestore.Movie{}, err
 	}
 	req.Header.Add("Authorization", e.apiKey)
 
 	resp, err := e.c.Do(req)
 	if err != nil {
-		return model.Movie{}, err
+		return moviestore.Movie{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return model.Movie{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return moviestore.Movie{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	newBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return model.Movie{}, err
+		return moviestore.Movie{}, err
 	}
 	defer resp.Body.Close()
 
-	var newMovie model.Movie
+	var newMovie moviestore.Movie
 	if err := json.Unmarshal(newBody, &newMovie); err != nil {
-		return model.Movie{}, err
+		return moviestore.Movie{}, err
 	}
 
 	return newMovie, nil

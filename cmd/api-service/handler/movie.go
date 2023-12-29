@@ -1,6 +1,7 @@
-package server
+package handler
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -9,46 +10,59 @@ import (
 	"log/slog"
 	"net/http"
 
-	"ewintr.nl/emdb/model"
+	"ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/google/uuid"
 )
 
 type MovieAPI struct {
-	repo   model.MovieRepository
+	apis   APIIndex
+	repo   *moviestore.MovieRepository
+	jq     *moviestore.JobQueue
 	logger *slog.Logger
 }
 
-func NewMovieAPI(repo model.MovieRepository, logger *slog.Logger) *MovieAPI {
+func NewMovieAPI(apis APIIndex, repo *moviestore.MovieRepository, jq *moviestore.JobQueue, logger *slog.Logger) *MovieAPI {
 	return &MovieAPI{
+		apis:   apis,
 		repo:   repo,
+		jq:     jq,
 		logger: logger.With("api", "movie"),
 	}
 }
 
-func (api *MovieAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	logger := api.logger.With("method", "serveHTTP")
+func (movieAPI *MovieAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	logger := movieAPI.logger.With("method", "serveHTTP")
 
-	subPath, _ := ShiftPath(r.URL.Path)
+	subPath, subTail := ShiftPath(r.URL.Path)
+	for aPath, api := range movieAPI.apis {
+		if subPath == aPath {
+			r.URL.Path = subTail
+			r = r.Clone(context.WithValue(r.Context(), MovieKey, subPath))
+			api.ServeHTTP(w, r)
+			return
+		}
+	}
+
 	switch {
 	case r.Method == http.MethodGet && subPath != "":
-		api.Read(w, r, subPath)
+		movieAPI.Read(w, r, subPath)
 	case r.Method == http.MethodPut && subPath != "":
-		api.Store(w, r, subPath)
+		movieAPI.Store(w, r, subPath)
 	case r.Method == http.MethodPost && subPath == "":
-		api.Store(w, r, "")
+		movieAPI.Store(w, r, "")
 	case r.Method == http.MethodDelete && subPath != "":
-		api.Delete(w, r, subPath)
+		movieAPI.Delete(w, r, subPath)
 	case r.Method == http.MethodGet && subPath == "":
-		api.List(w, r)
+		movieAPI.List(w, r)
 	default:
 		Error(w, http.StatusNotFound, "unregistered path", fmt.Errorf("method %q with subpath %q was not registered in /movie", r.Method, subPath), logger)
 	}
 }
 
-func (api *MovieAPI) Read(w http.ResponseWriter, r *http.Request, movieID string) {
-	logger := api.logger.With("method", "read")
+func (movieAPI *MovieAPI) Read(w http.ResponseWriter, r *http.Request, movieID string) {
+	logger := movieAPI.logger.With("method", "read")
 
-	movie, err := api.repo.FindOne(movieID)
+	m, err := movieAPI.repo.FindOne(movieID)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		w.WriteHeader(http.StatusNotFound)
@@ -59,7 +73,7 @@ func (api *MovieAPI) Read(w http.ResponseWriter, r *http.Request, movieID string
 		return
 	}
 
-	resJson, err := json.Marshal(movie)
+	resJson, err := json.Marshal(m)
 	if err != nil {
 		Error(w, http.StatusInternalServerError, "could not marshal response", err, logger)
 		return
@@ -68,8 +82,8 @@ func (api *MovieAPI) Read(w http.ResponseWriter, r *http.Request, movieID string
 	fmt.Fprint(w, string(resJson))
 }
 
-func (api *MovieAPI) Store(w http.ResponseWriter, r *http.Request, urlID string) {
-	logger := api.logger.With("method", "create")
+func (movieAPI *MovieAPI) Store(w http.ResponseWriter, r *http.Request, urlID string) {
+	logger := movieAPI.logger.With("method", "create")
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -78,28 +92,33 @@ func (api *MovieAPI) Store(w http.ResponseWriter, r *http.Request, urlID string)
 	}
 	defer r.Body.Close()
 
-	var movie *model.Movie
-	if err := json.Unmarshal(body, &movie); err != nil {
+	var m moviestore.Movie
+	if err := json.Unmarshal(body, &m); err != nil {
 		Error(w, http.StatusBadRequest, "could not unmarshal request body", err, logger)
 		return
 	}
 
 	switch {
-	case urlID == "" && movie.ID == "":
-		movie.ID = uuid.New().String()
-	case urlID != "" && movie.ID == "":
-		movie.ID = urlID
-	case urlID != "" && movie.ID != "" && urlID != movie.ID:
+	case urlID == "" && m.ID == "":
+		m.ID = uuid.New().String()
+	case urlID != "" && m.ID == "":
+		m.ID = urlID
+	case urlID != "" && m.ID != "" && urlID != m.ID:
 		Error(w, http.StatusBadRequest, "id in path does not match id in body", err, logger)
 		return
 	}
 
-	if err := api.repo.Store(movie); err != nil {
+	if err := movieAPI.repo.Store(m); err != nil {
 		Error(w, http.StatusInternalServerError, "could not store movie", err, logger)
 		return
 	}
 
-	resBody, err := json.Marshal(movie)
+	if err := movieAPI.jq.Add(m.ID, moviestore.ActionFetchIMDBReviews); err != nil {
+		Error(w, http.StatusInternalServerError, "could not add job to queue", err, logger)
+		return
+	}
+
+	resBody, err := json.Marshal(m)
 	if err != nil {
 		Error(w, http.StatusInternalServerError, "could not marshal movie", err, logger)
 		return
@@ -108,10 +127,10 @@ func (api *MovieAPI) Store(w http.ResponseWriter, r *http.Request, urlID string)
 	fmt.Fprint(w, string(resBody))
 }
 
-func (api *MovieAPI) Delete(w http.ResponseWriter, r *http.Request, urlID string) {
-	logger := api.logger.With("method", "delete")
+func (movieAPI *MovieAPI) Delete(w http.ResponseWriter, r *http.Request, urlID string) {
+	logger := movieAPI.logger.With("method", "delete")
 
-	err := api.repo.Delete(urlID)
+	err := movieAPI.repo.Delete(urlID)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		w.WriteHeader(http.StatusNotFound)
@@ -125,10 +144,10 @@ func (api *MovieAPI) Delete(w http.ResponseWriter, r *http.Request, urlID string
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (api *MovieAPI) List(w http.ResponseWriter, r *http.Request) {
-	logger := api.logger.With("method", "list")
+func (movieAPI *MovieAPI) List(w http.ResponseWriter, r *http.Request) {
+	logger := movieAPI.logger.With("method", "list")
 
-	movies, err := api.repo.FindAll()
+	movies, err := movieAPI.repo.FindAll()
 	if err != nil {
 		Error(w, http.StatusInternalServerError, "could not get movies", err, logger)
 		return
