@@ -134,3 +134,31 @@ func (e *EMDB) UpdateMovie(m moviestore.Movie) (moviestore.Movie, error) {
 
 	return newMovie, nil
 }
+
+func (e *EMDB) GetReviews(movieID string) ([]moviestore.Review, error) {
+	url := fmt.Sprintf("%s/movie/%s/review", e.baseURL, movieID)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", e.apiKey)
+
+	resp, err := e.c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	var reviews []moviestore.Review
+	if err := json.Unmarshal(body, &reviews); err != nil {
+		return nil, err
+	}
+
+	return reviews, nil
+}
