@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"ewintr.nl/emdb/cmd/api-service/job"
 	"ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/google/uuid"
 )
@@ -17,11 +18,11 @@ import (
 type MovieAPI struct {
 	apis   APIIndex
 	repo   *moviestore.MovieRepository
-	jq     *moviestore.JobQueue
+	jq     *job.JobQueue
 	logger *slog.Logger
 }
 
-func NewMovieAPI(apis APIIndex, repo *moviestore.MovieRepository, jq *moviestore.JobQueue, logger *slog.Logger) *MovieAPI {
+func NewMovieAPI(apis APIIndex, repo *moviestore.MovieRepository, jq *job.JobQueue, logger *slog.Logger) *MovieAPI {
 	return &MovieAPI{
 		apis:   apis,
 		repo:   repo,
@@ -33,29 +34,30 @@ func NewMovieAPI(apis APIIndex, repo *moviestore.MovieRepository, jq *moviestore
 func (movieAPI *MovieAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logger := movieAPI.logger.With("method", "serveHTTP")
 
-	subPath, subTail := ShiftPath(r.URL.Path)
+	head, tail := ShiftPath(r.URL.Path)
+	subHead, subTail := ShiftPath(tail)
 	for aPath, api := range movieAPI.apis {
-		if subPath == aPath {
+		if head != "" && subHead == fmt.Sprintf("%s", aPath) {
 			r.URL.Path = subTail
-			r = r.Clone(context.WithValue(r.Context(), MovieKey, subPath))
+			r = r.Clone(context.WithValue(r.Context(), MovieKey, head))
 			api.ServeHTTP(w, r)
 			return
 		}
 	}
 
 	switch {
-	case r.Method == http.MethodGet && subPath != "":
-		movieAPI.Read(w, r, subPath)
-	case r.Method == http.MethodPut && subPath != "":
-		movieAPI.Store(w, r, subPath)
-	case r.Method == http.MethodPost && subPath == "":
+	case r.Method == http.MethodGet && head != "":
+		movieAPI.Read(w, r, head)
+	case r.Method == http.MethodPut && head != "":
+		movieAPI.Store(w, r, head)
+	case r.Method == http.MethodPost && head == "":
 		movieAPI.Store(w, r, "")
-	case r.Method == http.MethodDelete && subPath != "":
-		movieAPI.Delete(w, r, subPath)
-	case r.Method == http.MethodGet && subPath == "":
+	case r.Method == http.MethodDelete && head != "":
+		movieAPI.Delete(w, r, head)
+	case r.Method == http.MethodGet && head == "":
 		movieAPI.List(w, r)
 	default:
-		Error(w, http.StatusNotFound, "unregistered path", fmt.Errorf("method %q with subpath %q was not registered in /movie", r.Method, subPath), logger)
+		Error(w, http.StatusNotFound, "unregistered path", fmt.Errorf("method %q with subpath %q was not registered in /movie", r.Method, head), logger)
 	}
 }
 
@@ -113,7 +115,7 @@ func (movieAPI *MovieAPI) Store(w http.ResponseWriter, r *http.Request, urlID st
 		return
 	}
 
-	if err := movieAPI.jq.Add(m.ID, moviestore.ActionFetchIMDBReviews); err != nil {
+	if err := movieAPI.jq.Add(m.ID, job.ActionRefreshIMDBReviews); err != nil {
 		Error(w, http.StatusInternalServerError, "could not add job to queue", err, logger)
 		return
 	}

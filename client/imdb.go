@@ -3,6 +3,8 @@ package client
 import (
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -57,8 +59,25 @@ func (i *IMDB) GetReviews(imdbID string) (map[string]string, error) {
 			return
 		}
 
-		reviews[permaLink] = reviewNode.Text()
+		reviews[permaLink] = ScrubIMDBReview(reviewNode.Text())
 	})
 
 	return reviews, nil
+}
+
+func ScrubIMDBReview(review string) string {
+	// remove footer
+	for _, text := range []string{"Was this review helpful?", "Sign in to vote.", "Permalink"} {
+		review = strings.ReplaceAll(review, text, "")
+	}
+
+	// remove superfluous whitespace
+	reWS := regexp.MustCompile(`\n\s+`)
+	review = reWS.ReplaceAllString(review, "\n")
+
+	// remove superfluous newlines
+	re := regexp.MustCompile(`\n{3,}`)
+	review = re.ReplaceAllString(review, "\n\n")
+
+	return review
 }

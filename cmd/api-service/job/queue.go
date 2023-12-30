@@ -1,42 +1,21 @@
-package moviestore
+package job
 
 import (
 	"database/sql"
 	"errors"
 	"log/slog"
 	"time"
+
+	"ewintr.nl/emdb/cmd/api-service/moviestore"
 )
-
-type JobStatus string
-
-const (
-	JobStatusToDo  JobStatus = "todo"
-	JobStatusDoing JobStatus = "doing"
-	JobStatusDone  JobStatus = "done"
-)
-
-type Action string
-
-const (
-	interval = 10 * time.Second
-
-	ActionFetchIMDBReviews Action = "fetch-imdb-reviews"
-)
-
-type Job struct {
-	ID      int
-	MovieID string
-	Action  Action
-	Status  JobStatus
-}
 
 type JobQueue struct {
-	db     *SQLite
+	db     *moviestore.SQLite
 	out    chan Job
 	logger *slog.Logger
 }
 
-func NewJobQueue(db *SQLite, logger *slog.Logger) *JobQueue {
+func NewJobQueue(db *moviestore.SQLite, logger *slog.Logger) *JobQueue {
 	return &JobQueue{
 		db:     db,
 		out:    make(chan Job),

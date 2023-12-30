@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -25,17 +26,25 @@ func (reviewAPI *ReviewAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	subPath, _ := ShiftPath(r.URL.Path)
 	switch {
-	//case r.Method == http.MethodGet && subPath != "":
-	//	reviewAPI.Read(w, r, subPath)
-	//case r.Method == http.MethodPut && subPath != "":
-	//	reviewAPI.Store(w, r, subPath)
-	//case r.Method == http.MethodPost && subPath == "":
-	//	reviewAPI.Store(w, r, "")
-	//case r.Method == http.MethodDelete && subPath != "":
-	//	reviewAPI.Delete(w, r, subPath)
-	//case r.Method == http.MethodGet && subPath == "":
-	//	reviewAPI.List(w, r)
+	case r.Method == http.MethodGet && subPath == "":
+		reviewAPI.List(w, r)
 	default:
 		Error(w, http.StatusNotFound, "unregistered path", fmt.Errorf("method %q with subpath %q was not registered in /review", r.Method, subPath), logger)
+	}
+}
+
+func (reviewAPI *ReviewAPI) List(w http.ResponseWriter, r *http.Request) {
+	logger := reviewAPI.logger.With("method", "list")
+
+	movieID := r.Context().Value(MovieKey).(string)
+	reviews, err := reviewAPI.repo.FindByMovieID(movieID)
+	if err != nil {
+		Error(w, http.StatusInternalServerError, "could not get reviews", err, logger)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(reviews); err != nil {
+		Error(w, http.StatusInternalServerError, "could not encode reviews", err, logger)
+		return
 	}
 }

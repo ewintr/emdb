@@ -65,3 +65,11 @@ func (rr *ReviewRepository) FindByMovieID(movieID string) ([]Review, error) {
 
 	return reviews, nil
 }
+
+func (rr *ReviewRepository) DeleteByMovieID(id string) error {
+	if _, err := rr.db.Exec(`DELETE FROM review WHERE movie_id=?`, id); err != nil {
+		return err
+	}
+
+	return nil
+}
