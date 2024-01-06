@@ -76,6 +76,22 @@ func (rr *ReviewRepository) FindByMovieID(movieID string) ([]Review, error) {
 	return reviews, nil
 }
 
+func (rr *ReviewRepository) FindNextUnrated() (Review, error) {
+	row := rr.db.QueryRow(`SELECT id, movie_id, source, url, review, quality, mentions FROM review WHERE quality=0 LIMIT 1`)
+	if row.Err() != nil {
+		return Review{}, row.Err()
+	}
+
+	r := Review{}
+	var mentions string
+	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
+		return Review{}, err
+	}
+	r.Mentions = strings.Split(mentions, MentionsSeparator)
+
+	return r, nil
+}
+
 func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
 	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, quality, mentions FROM review WHERE quality=0`)
 	if err != nil {
