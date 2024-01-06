@@ -62,14 +62,16 @@ func (m tabTMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "left", "shift+tab":
 			cmds = append(cmds, SelectPrevTab(), m.ResetCmd())
 		case "enter":
-			switch m.focused {
-			case "search":
+			if m.focused == "search" {
 				cmds = append(cmds, m.SearchTMDBCmd(m.searchInput.Value()))
 				m.searchInput.Blur()
 				m.Log("search tmdb...")
-			case "result":
+			}
+		case "i":
+			if m.focused == "result" {
 				movie := m.searchResults.SelectedItem().(Movie)
 				cmds = append(cmds, m.ImportMovieCmd(movie), m.ResetCmd())
+				m.Log(fmt.Sprintf("imported movie %s", movie.Title()))
 			}
 		}
 	case Movies:
