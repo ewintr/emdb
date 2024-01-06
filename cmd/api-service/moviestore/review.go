@@ -50,8 +50,10 @@ func (rr *ReviewRepository) FindOne(id string) (Review, error) {
 	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
 		return Review{}, err
 	}
-	r.Mentions = strings.Split(mentions, MentionsSeparator)
-
+	r.Mentions = make([]string, 0)
+	if mentions != "" {
+		r.Mentions = strings.Split(mentions, MentionsSeparator)
+	}
 	return r, nil
 }
 
@@ -68,7 +70,10 @@ func (rr *ReviewRepository) FindByMovieID(movieID string) ([]Review, error) {
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
 			return nil, err
 		}
-		r.Mentions = strings.Split(mentions, MentionsSeparator)
+		r.Mentions = make([]string, 0)
+		if mentions != "" {
+			r.Mentions = strings.Split(mentions, MentionsSeparator)
+		}
 		reviews = append(reviews, r)
 	}
 	rows.Close()
@@ -87,7 +92,10 @@ func (rr *ReviewRepository) FindNextUnrated() (Review, error) {
 	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
 		return Review{}, err
 	}
-	r.Mentions = strings.Split(mentions, MentionsSeparator)
+	r.Mentions = make([]string, 0)
+	if mentions != "" {
+		r.Mentions = strings.Split(mentions, MentionsSeparator)
+	}
 
 	return r, nil
 }
@@ -105,7 +113,10 @@ func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
 			return nil, err
 		}
-		r.Mentions = strings.Split(mentions, MentionsSeparator)
+		r.Mentions = make([]string, 0)
+		if mentions != "" {
+			r.Mentions = strings.Split(mentions, MentionsSeparator)
+		}
 		reviews = append(reviews, r)
 	}
 	rows.Close()
