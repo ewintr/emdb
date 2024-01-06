@@ -29,17 +29,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rec := httptest.NewRecorder() // records the response to be able to mix writing headers and content
 
 	// cors
-	w.Header().Add("Access-Control-Allow-Origin", "*")
-	w.Header().Add("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-	w.Header().Add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	rec.Header().Add("Access-Control-Allow-Origin", "*")
+	rec.Header().Add("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+	rec.Header().Add("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
+		rec.WriteHeader(http.StatusOK)
 		returnResponse(w, rec, r, s.logger)
 		return
 	}
 
 	logger := s.logger.With("path", r.URL.Path)
-	w.Header().Add("Content-Type", "application/json")
+	rec.Header().Add("Content-Type", "application/json")
 
 	// authenticate
 	if key := r.Header.Get("Authorization"); s.apiKey != "localOnly" && key != s.apiKey {
