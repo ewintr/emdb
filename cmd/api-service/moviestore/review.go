@@ -4,6 +4,8 @@ import "strings"
 
 const (
 	ReviewSourceIMDB = "imdb"
+
+	MentionsSeparator = "|"
 )
 
 type ReviewSource string
@@ -30,7 +32,7 @@ func NewReviewRepository(db *SQLite) *ReviewRepository {
 
 func (rr *ReviewRepository) Store(r Review) error {
 	if _, err := rr.db.Exec(`REPLACE INTO review (id, movie_id, source, url, review, quality, mentions) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		r.ID, r.MovieID, r.Source, r.URL, r.Review, r.Quality, strings.Join(r.Mentions, ",")); err != nil {
+		r.ID, r.MovieID, r.Source, r.URL, r.Review, r.Quality, strings.Join(r.Mentions, MentionsSeparator)); err != nil {
 		return err
 	}
 
@@ -48,7 +50,7 @@ func (rr *ReviewRepository) FindOne(id string) (Review, error) {
 	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
 		return Review{}, err
 	}
-	r.Mentions = strings.Split(mentions, ",")
+	r.Mentions = strings.Split(mentions, MentionsSeparator)
 
 	return r, nil
 }
@@ -66,7 +68,7 @@ func (rr *ReviewRepository) FindByMovieID(movieID string) ([]Review, error) {
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
 			return nil, err
 		}
-		r.Mentions = strings.Split(mentions, ",")
+		r.Mentions = strings.Split(mentions, MentionsSeparator)
 		reviews = append(reviews, r)
 	}
 	rows.Close()
@@ -87,7 +89,7 @@ func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
 			return nil, err
 		}
-		r.Mentions = strings.Split(mentions, ",")
+		r.Mentions = strings.Split(mentions, MentionsSeparator)
 		reviews = append(reviews, r)
 	}
 	rows.Close()
