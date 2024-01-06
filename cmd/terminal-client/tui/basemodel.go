@@ -57,7 +57,10 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 			tmdbTab, cmd = NewTabTMDB(m.emdb, m.tmdb, m.logger)
 			cmds = append(cmds, cmd)
+			reviewTab, cmd := NewTabReview(m.emdb, m.logger)
+			cmds = append(cmds, cmd)
 			m.tabs.AddTab("emdb", "Watched movies", emdbTab)
+			m.tabs.AddTab("review", "Review", reviewTab)
 			m.tabs.AddTab("tmdb", "TMDB", tmdbTab)
 			m.initialized = true
 		}

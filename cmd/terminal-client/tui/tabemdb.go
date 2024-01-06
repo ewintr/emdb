@@ -49,9 +49,7 @@ func NewTabEMDB(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
 		"Rating",
 		"Comment",
 	}
-	//if l == "Comment" {
-	//	formInputs[i] = textarea.New()
-	//}
+
 	inputWatchedOn := textinput.New()
 	inputWatchedOn.Prompt = ""
 	inputWatchedOn.Width = 50
