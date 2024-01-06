@@ -63,6 +63,10 @@ var sqliteMigrations = []sqliteMigration{
 	`INSERT INTO job_queue (movie_id, action, status)
 		SELECT id, 'fetch-imdb-reviews', 'todo'
 		FROM movie`,
+	`AlTER TABLE review ADD COLUMN "references" TEXT NOT NULL DEFAULT ""`,
+	`ALTER TABLE review ADD COLUMN "quality" INTEGER NOT NULL DEFAULT 0`,
+	`ALTER TABLE review DROP COLUMN "references"`,
+	`ALTER TABLE review ADD COLUMN "mentions" TEXT NOT NULL DEFAULT ""`,
 }
 
 var (

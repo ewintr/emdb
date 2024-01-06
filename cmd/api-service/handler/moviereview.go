@@ -9,34 +9,35 @@ import (
 	"ewintr.nl/emdb/cmd/api-service/moviestore"
 )
 
-type ReviewAPI struct {
+type MovieReviewAPI struct {
 	repo   *moviestore.ReviewRepository
 	logger *slog.Logger
 }
 
-func NewReviewAPI(repo *moviestore.ReviewRepository, logger *slog.Logger) *ReviewAPI {
-	return &ReviewAPI{
+func NewMovieReviewAPI(repo *moviestore.ReviewRepository, logger *slog.Logger) *MovieReviewAPI {
+	return &MovieReviewAPI{
 		repo:   repo,
-		logger: logger.With("api", "review"),
+		logger: logger.With("api", "moviereview"),
 	}
 }
 
-func (reviewAPI *ReviewAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (reviewAPI *MovieReviewAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logger := reviewAPI.logger.With("method", "serveHTTP")
 
 	subPath, _ := ShiftPath(r.URL.Path)
 	switch {
-	case r.Method == http.MethodGet && subPath == "unrated":
-		reviewAPI.ListUnrated(w, r)
+	case r.Method == http.MethodGet && subPath == "":
+		reviewAPI.List(w, r)
 	default:
 		Error(w, http.StatusNotFound, "unregistered path", fmt.Errorf("method %q with subpath %q was not registered in /review", r.Method, subPath), logger)
 	}
 }
 
-func (reviewAPI *ReviewAPI) ListUnrated(w http.ResponseWriter, r *http.Request) {
-	logger := reviewAPI.logger.With("method", "listUnrated")
+func (reviewAPI *MovieReviewAPI) List(w http.ResponseWriter, r *http.Request) {
+	logger := reviewAPI.logger.With("method", "list")
 
-	reviews, err := reviewAPI.repo.FindUnrated()
+	movieID := r.Context().Value(MovieKey).(string)
+	reviews, err := reviewAPI.repo.FindByMovieID(movieID)
 	if err != nil {
 		Error(w, http.StatusInternalServerError, "could not get reviews", err, logger)
 		return

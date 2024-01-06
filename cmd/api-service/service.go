@@ -40,8 +40,9 @@ func main() {
 	apis := handler.APIIndex{
 		"admin": handler.NewAdminAPI(jobQueue, logger),
 		"movie": handler.NewMovieAPI(handler.APIIndex{
-			"review": handler.NewReviewAPI(moviestore.NewReviewRepository(db), logger),
+			"review": handler.NewMovieReviewAPI(moviestore.NewReviewRepository(db), logger),
 		}, moviestore.NewMovieRepository(db), jobQueue, logger),
+		"review": handler.NewReviewAPI(moviestore.NewReviewRepository(db), logger),
 	}
 
 	go http.ListenAndServe(fmt.Sprintf(":%d", *port), handler.NewServer(*apiKey, apis, logger))
