@@ -51,7 +51,10 @@ func (w *Worker) RefreshAllReviews(jobID int) {
 	}
 
 	for _, m := range movies {
-		w.RefreshReviews(jobID, m.ID)
+		if err := w.jq.Add(m.ID, ActionRefreshIMDBReviews); err != nil {
+			logger.Error("could not add job", "error", err)
+			return
+		}
 	}
 }
 
