@@ -108,12 +108,13 @@ func (m *tabReview) View() string {
 
 	colReview := lipgloss.NewStyle().
 		Width(colReviewWidth - 2).
-		Height(m.height - 2).
+		Height(m.height).
 		Padding(1).
+		MaxHeight(m.height).
 		Render(m.ViewReview())
 	colRate := lipgloss.NewStyle().
 		Width(colRateWidth - 2).
-		Height(m.height - 2).
+		Height(m.height).
 		Padding(1).
 		Render(m.ViewForm())
 

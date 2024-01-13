@@ -191,38 +191,27 @@ func (e *EMDB) GetNextUnratedReview() (moviestore.Review, error) {
 	return review, nil
 }
 
-func (e *EMDB) UpdateReview(review moviestore.Review) (moviestore.Review, error) {
+func (e *EMDB) UpdateReview(review moviestore.Review) error {
 	body, err := json.Marshal(review)
 	if err != nil {
-		return moviestore.Review{}, err
+		return err
 	}
 
 	url := fmt.Sprintf("%s/review/%s", e.baseURL, review.ID)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(body))
 	if err != nil {
-		return moviestore.Review{}, err
+		return err
 	}
 	req.Header.Add("Authorization", e.apiKey)
 
 	resp, err := e.c.Do(req)
 	if err != nil {
-		return moviestore.Review{}, err
+		return err
 	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return moviestore.Review{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	newBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return moviestore.Review{}, err
-	}
-	defer resp.Body.Close()
-
-	var newReview moviestore.Review
-	if err := json.Unmarshal(newBody, &newReview); err != nil {
-		return moviestore.Review{}, err
-	}
-
-	return newReview, nil
+	return nil
 }
