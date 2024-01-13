@@ -27,14 +27,14 @@ func (reviewAPI *ReviewAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	subPath, subTrail := ShiftPath(r.URL.Path)
 	subSubPath, _ := ShiftPath(subTrail)
 	switch {
-	case r.Method == http.MethodGet && subPath != "":
-		reviewAPI.Get(w, r, subPath)
 	case r.Method == http.MethodGet && subPath == "":
 		reviewAPI.List(w, r)
 	case r.Method == http.MethodGet && subPath == "unrated" && subSubPath == "":
 		reviewAPI.ListUnrated(w, r)
 	case r.Method == http.MethodGet && subPath == "unrated" && subSubPath == "next":
 		reviewAPI.NextUnrated(w, r)
+	case r.Method == http.MethodGet && subPath != "":
+		reviewAPI.Get(w, r, subPath)
 	case r.Method == http.MethodPut && subPath != "":
 		reviewAPI.Store(w, r, subPath)
 	default:
