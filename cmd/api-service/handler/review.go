@@ -27,6 +27,8 @@ func (reviewAPI *ReviewAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	subPath, subTrail := ShiftPath(r.URL.Path)
 	subSubPath, _ := ShiftPath(subTrail)
 	switch {
+	case r.Method == http.MethodGet && subPath != "":
+		reviewAPI.Get(w, r, subPath)
 	case r.Method == http.MethodGet && subPath == "unrated" && subSubPath == "":
 		reviewAPI.ListUnrated(w, r)
 	case r.Method == http.MethodGet && subPath == "unrated" && subSubPath == "next":
@@ -35,6 +37,21 @@ func (reviewAPI *ReviewAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reviewAPI.Store(w, r, subPath)
 	default:
 		Error(w, http.StatusNotFound, "unregistered path", fmt.Errorf("method %q with subpath %q was not registered in /review", r.Method, subPath), logger)
+	}
+}
+
+func (reviewAPI *ReviewAPI) Get(w http.ResponseWriter, r *http.Request, id string) {
+	logger := reviewAPI.logger.With("method", "get")
+
+	review, err := reviewAPI.repo.FindOne(id)
+	if err != nil {
+		Error(w, http.StatusInternalServerError, "could not get review", err, logger)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(review); err != nil {
+		Error(w, http.StatusInternalServerError, "could not encode review", err, logger)
+		return
 	}
 }
 

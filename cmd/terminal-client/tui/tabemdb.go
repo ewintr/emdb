@@ -147,15 +147,6 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m *tabEMDB) updateFormInputs(msg tea.Msg) tea.Cmd {
-	cmds := make([]tea.Cmd, 3)
-	m.inputWatchedOn, cmds[0] = m.inputWatchedOn.Update(msg)
-	m.inputRating, cmds[1] = m.inputRating.Update(msg)
-	m.inputComment, cmds[2] = m.inputComment.Update(msg)
-
-	return tea.Batch(cmds...)
-}
-
 func (m tabEMDB) View() string {
 	colLeft := lipgloss.NewStyle().
 		Width(m.colWidth - 2).
@@ -180,6 +171,58 @@ func (m *tabEMDB) UpdateForm() {
 	m.inputRating.SetValue(fmt.Sprintf("%d", movie.m.Rating))
 	m.inputComment.SetValue(movie.m.Comment)
 	m.Log(fmt.Sprintf("showing movie %s", movie.m.ID))
+}
+
+func (m *tabEMDB) updateFormInputs(msg tea.Msg) tea.Cmd {
+	var cmd tea.Cmd
+
+	switch m.formFocus {
+	case 0:
+		m.inputWatchedOn, cmd = m.inputWatchedOn.Update(msg)
+	case 1:
+		m.inputRating, cmd = m.inputRating.Update(msg)
+	case 2:
+		m.inputComment, cmd = m.inputComment.Update(msg)
+	}
+	return cmd
+}
+
+func (m *tabEMDB) NavigateForm(key string) []tea.Cmd {
+	order := []string{"Watched on", "Rating", "Comment"}
+
+	var cmds []tea.Cmd
+	if key == "up" || key == "shift+tab" {
+		m.formFocus--
+	} else {
+		m.formFocus++
+	}
+	if m.formFocus >= len(order) {
+		m.formFocus = 0
+	}
+	if m.formFocus < 0 {
+		m.formFocus = len(order) - 1
+	}
+
+	switch order[m.formFocus] {
+	case "Watched on":
+		m.inputWatchedOn.PromptStyle = focusedStyle
+		m.inputWatchedOn.TextStyle = focusedStyle
+		cmds = append(cmds, m.inputWatchedOn.Focus())
+		m.inputRating.Blur()
+		m.inputComment.Blur()
+	case "Rating":
+		m.inputRating.PromptStyle = focusedStyle
+		m.inputRating.TextStyle = focusedStyle
+		cmds = append(cmds, m.inputRating.Focus())
+		m.inputWatchedOn.Blur()
+		m.inputComment.Blur()
+	case "Comment":
+		cmds = append(cmds, m.inputComment.Focus())
+		m.inputWatchedOn.Blur()
+		m.inputRating.Blur()
+	}
+
+	return cmds
 }
 
 func (m *tabEMDB) ViewForm() string {
@@ -213,44 +256,6 @@ func (m *tabEMDB) ViewForm() string {
 	fieldsView := strings.Join(fields, "\n")
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, labelView, fieldsView)
-}
-
-func (m *tabEMDB) NavigateForm(key string) []tea.Cmd {
-	order := []string{"Watched on", "Rating", "Comment"}
-
-	var cmds []tea.Cmd
-	if key == "up" || key == "shift+tab" {
-		m.formFocus--
-	} else {
-		m.formFocus++
-	}
-	if m.formFocus > len(order) {
-		m.formFocus = 0
-	}
-	if m.formFocus < 0 {
-		m.formFocus = len(order)
-	}
-
-	switch order[m.formFocus] {
-	case "Watched on":
-		m.inputWatchedOn.PromptStyle = focusedStyle
-		m.inputWatchedOn.TextStyle = focusedStyle
-		cmds = append(cmds, m.inputWatchedOn.Focus())
-		m.inputRating.Blur()
-		m.inputComment.Blur()
-	case "Rating":
-		m.inputRating.PromptStyle = focusedStyle
-		m.inputRating.TextStyle = focusedStyle
-		cmds = append(cmds, m.inputRating.Focus())
-		m.inputWatchedOn.Blur()
-		m.inputComment.Blur()
-	case "Comment":
-		cmds = append(cmds, m.inputComment.Focus())
-		m.inputWatchedOn.Blur()
-		m.inputRating.Blur()
-	}
-
-	return cmds
 }
 
 func (m *tabEMDB) StoreMovie() tea.Cmd {
