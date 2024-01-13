@@ -124,6 +124,30 @@ func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
 	return reviews, nil
 }
 
+func (rr *ReviewRepository) FindAll() ([]Review, error) {
+	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, quality, mentions FROM review`)
+	if err != nil {
+		return nil, err
+	}
+
+	reviews := make([]Review, 0)
+	var mentions string
+	for rows.Next() {
+		r := Review{}
+		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
+			return nil, err
+		}
+		r.Mentions = make([]string, 0)
+		if mentions != "" {
+			r.Mentions = strings.Split(mentions, MentionsSeparator)
+		}
+		reviews = append(reviews, r)
+	}
+	rows.Close()
+
+	return reviews, nil
+}
+
 func (rr *ReviewRepository) DeleteByMovieID(id string) error {
 	if _, err := rr.db.Exec(`DELETE FROM review WHERE movie_id=?`, id); err != nil {
 		return err

@@ -29,6 +29,8 @@ func (reviewAPI *ReviewAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == http.MethodGet && subPath != "":
 		reviewAPI.Get(w, r, subPath)
+	case r.Method == http.MethodGet && subPath == "":
+		reviewAPI.List(w, r)
 	case r.Method == http.MethodGet && subPath == "unrated" && subSubPath == "":
 		reviewAPI.ListUnrated(w, r)
 	case r.Method == http.MethodGet && subPath == "unrated" && subSubPath == "next":
@@ -51,6 +53,21 @@ func (reviewAPI *ReviewAPI) Get(w http.ResponseWriter, r *http.Request, id strin
 
 	if err := json.NewEncoder(w).Encode(review); err != nil {
 		Error(w, http.StatusInternalServerError, "could not encode review", err, logger)
+		return
+	}
+}
+
+func (reviewAPI *ReviewAPI) List(w http.ResponseWriter, r *http.Request) {
+	logger := reviewAPI.logger.With("method", "list")
+
+	reviews, err := reviewAPI.repo.FindAll()
+	if err != nil {
+		Error(w, http.StatusInternalServerError, "could not get reviews", err, logger)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(reviews); err != nil {
+		Error(w, http.StatusInternalServerError, "could not encode reviews", err, logger)
 		return
 	}
 }
