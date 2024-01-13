@@ -9,3 +9,5 @@ type Review struct {
 	Quality  int
 	Mentions []string
 }
+
+type ReviewStored string

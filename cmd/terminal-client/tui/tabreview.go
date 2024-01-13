@@ -67,7 +67,6 @@ func (m *tabReview) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "esc":
 				m.mode = "view"
 			case "enter":
-				m.mode = "view"
 				cmds = append(cmds, m.StoreReview())
 			default:
 				cmds = append(cmds, m.updateFormInputs(msg))
@@ -96,7 +95,10 @@ func (m *tabReview) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.logger.Log(fmt.Sprintf("got review %s", msg.ID))
 		m.selectedReview = msg
 		m.UpdateForm()
-
+	case ReviewStored:
+		m.logger.Log(fmt.Sprintf("stored review %s", msg))
+		cmds = append(cmds, m.inputQuality.Focus())
+		cmds = append(cmds, FetchNextUnratedReview(m.emdb))
 	}
 
 	return m, tea.Batch(cmds...)
@@ -193,12 +195,11 @@ func (m *tabReview) StoreReview() tea.Cmd {
 		m.selectedReview.Quality = quality
 		m.selectedReview.Mentions = strings.Split(mentions, ",")
 
-		review, err := m.emdb.UpdateReview(m.selectedReview)
-		if err != nil {
+		if err := m.emdb.UpdateReview(m.selectedReview); err != nil {
 			return err
 		}
 
-		return review
+		return ReviewStored(m.selectedReview.ID)
 	}
 }
 
