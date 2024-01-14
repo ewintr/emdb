@@ -97,16 +97,22 @@ func (m baseModel) View() string {
 		return "\n  Initializing..."
 	}
 
-	logWindow := windowStyle.Width(m.contentSize.Width).Height(logLineCount).Render(m.logViewport.View())
-	return docStyle.Render(fmt.Sprintf("%s\n%s", m.tabs.View(), logWindow))
+	logWindow := windowStyle.
+		Width(m.contentSize.Width).
+		Height(logLineCount).
+		//Background(lipgloss.ANSIColor(termenv.ANSIYellow)).
+		Render(m.logViewport.View())
+
+	return fmt.Sprintf("%s\n%s", m.tabs.View(), logWindow)
 }
 
 func (m *baseModel) setSize() {
-	logHeight := logLineCount + docStyle.GetVerticalFrameSize()
+	logHeight := logLineCount
 	menuHeight := 1
 
-	m.contentSize.Width = m.windowSize.Width - windowStyle.GetHorizontalFrameSize() - docStyle.GetHorizontalFrameSize()
-	m.contentSize.Height = m.windowSize.Height - windowStyle.GetVerticalFrameSize() - docStyle.GetVerticalFrameSize() - logHeight - menuHeight
+	m.contentSize.Width = m.windowSize.Width - windowStyle.GetHorizontalFrameSize()
+	m.contentSize.Height = m.windowSize.Height - windowStyle.GetVerticalFrameSize() - logHeight - menuHeight
+	//m.Log(fmt.Sprintf("contentheight: %d = windowheight %d - windowframeheight %d -  logheight %d - menuheight %d", m.contentSize.Height, m.windowSize.Height, windowStyle.GetVerticalFrameSize(), logHeight, menuHeight))
 
 	m.logViewport.Width = m.contentSize.Width
 	m.logViewport.Height = logLineCount

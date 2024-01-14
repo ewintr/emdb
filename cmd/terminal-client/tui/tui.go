@@ -9,13 +9,11 @@ import (
 )
 
 var (
-	docStyle                 = lipgloss.NewStyle().Padding(1)
 	colorNormalForeground    = lipgloss.ANSIColor(termenv.ANSIWhite)
 	colorHighLightForeGround = lipgloss.ANSIColor(termenv.ANSIBrightWhite)
 	windowStyle              = lipgloss.NewStyle().
 					BorderForeground(colorHighLightForeGround).
 					Foreground(colorNormalForeground).
-					Padding(0, 1).
 					Border(lipgloss.NormalBorder(), true)
 	logLineCount = 10
 )

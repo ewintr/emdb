@@ -93,7 +93,7 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.colWidth = msg.Width / 2
 		m.colHeight = msg.Height
-		m.list.SetSize(m.colWidth-4, msg.Height-4)
+		m.list.SetSize(m.colWidth, msg.Height-4)
 		m.list, cmd = m.list.Update(msg)
 		cmds = append(cmds, cmd)
 	case Movies:
@@ -149,14 +149,12 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m tabEMDB) View() string {
 	colLeft := lipgloss.NewStyle().
-		Width(m.colWidth - 2).
-		Height(m.colHeight - 2).
-		Padding(1).
+		Width(m.colWidth).
+		Height(m.colHeight).
 		Render(m.list.View())
 	colRight := lipgloss.NewStyle().
-		Width(m.colWidth - 2).
-		Height(m.colHeight - 2).
-		Padding(1).
+		Width(m.colWidth).
+		Height(m.colHeight).
 		Render(m.ViewForm())
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, colLeft, colRight)

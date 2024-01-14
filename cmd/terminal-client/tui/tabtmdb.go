@@ -40,10 +40,10 @@ func (m tabTMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case TabSizeMsg:
 		if !m.initialized {
-			m.initialModel(msg.Width, msg.Height)
+			m.initialModel(msg.Width, msg.Height-2)
 		}
 		m.initialized = true
-		m.searchResults.SetSize(msg.Width, msg.Height)
+		m.searchResults.SetSize(msg.Width, msg.Height-2)
 	case TabResetMsg:
 		m.searchInput.SetValue("")
 		m.searchResults.SetItems([]list.Item{})
@@ -107,7 +107,7 @@ func (m *tabTMDB) initialModel(width, height int) {
 	m.searchInput = si
 	m.searchInput.Focus()
 
-	m.searchResults = list.New([]list.Item{}, list.NewDefaultDelegate(), width, height-50)
+	m.searchResults = list.New([]list.Item{}, list.NewDefaultDelegate(), width, height-1)
 	m.searchResults.Title = "Search results"
 	m.searchResults.SetShowHelp(false)
 

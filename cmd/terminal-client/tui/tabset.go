@@ -93,8 +93,12 @@ func (t *TabSet) View() string {
 			Render(fmt.Sprintf("   %s ", t.title[name])))
 	}
 	menu := lipgloss.JoinHorizontal(lipgloss.Top, items...)
-	pane := t.tabs[t.order[t.active]].View()
-	lipgloss.PlaceHorizontal(t.size.Width, lipgloss.Left, menu)
+	menu = lipgloss.PlaceHorizontal(t.size.Width, lipgloss.Left, menu)
+
+	pane := lipgloss.NewStyle().
+		//	Background(lipgloss.ANSIColor(termenv.ANSIBlue)).
+		Render(t.tabs[t.order[t.active]].View())
+	pane = lipgloss.PlaceVertical(t.size.Height, lipgloss.Top, pane)
 
 	return fmt.Sprintf("%s\n%s", menu, pane)
 }
