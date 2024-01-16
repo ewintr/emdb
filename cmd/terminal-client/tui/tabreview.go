@@ -9,6 +9,7 @@ import (
 	"ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -20,6 +21,7 @@ type tabReview struct {
 	height         int
 	mode           string
 	selectedReview moviestore.Review
+	reviewViewport viewport.Model
 	inputQuality   textinput.Model
 	inputMentions  textarea.Model
 	formFocus      int
@@ -27,6 +29,9 @@ type tabReview struct {
 }
 
 func NewTabReview(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
+	reviewViewport := viewport.New(0, 0)
+	//reviewViewport.KeyMap = viewport.KeyMap{}
+
 	inputQuality := textinput.New()
 	inputQuality.Prompt = ""
 	inputQuality.Width = 50
@@ -37,11 +42,12 @@ func NewTabReview(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	inputMentions.CharLimit = 500
 
 	return &tabReview{
-		emdb:          emdb,
-		mode:          "view",
-		inputQuality:  inputQuality,
-		inputMentions: inputMentions,
-		logger:        logger,
+		emdb:           emdb,
+		mode:           "view",
+		reviewViewport: reviewViewport,
+		inputQuality:   inputQuality,
+		inputMentions:  inputMentions,
+		logger:         logger,
 	}, nil
 }
 
@@ -50,6 +56,7 @@ func (m *tabReview) Init() tea.Cmd {
 }
 
 func (m *tabReview) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case TabSizeMsg:
@@ -58,6 +65,8 @@ func (m *tabReview) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.width = msg.Width
 		m.height = msg.Height
+		m.reviewViewport.Width = (m.width / 2) - 2
+		m.reviewViewport.Height = m.height - 2
 	case tea.KeyMsg:
 		switch m.mode {
 		case "edit":
@@ -89,11 +98,19 @@ func (m *tabReview) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.logger.Log("fetching next unrated review")
 				cmds = append(cmds, m.inputQuality.Focus())
 				cmds = append(cmds, FetchNextUnratedReview(m.emdb))
+			default:
+				m.logger.Log(fmt.Sprintf("key: %s", msg.String()))
+				m.reviewViewport, cmd = m.reviewViewport.Update(msg)
+				cmds = append(cmds, cmd)
 			}
 		}
 	case moviestore.Review:
 		m.logger.Log(fmt.Sprintf("got review %s", msg.ID))
 		m.selectedReview = msg
+		review := strings.ReplaceAll(m.selectedReview.Review, "\n", "\n\n")
+		review = lipgloss.NewStyle().Width((m.width / 2) - 2).Render(review)
+		m.reviewViewport.SetContent(review)
+		m.reviewViewport.GotoTop()
 		m.UpdateForm()
 	case ReviewStored:
 		m.logger.Log(fmt.Sprintf("stored review %s", msg))
@@ -179,9 +196,7 @@ func (m *tabReview) ViewForm() string {
 }
 
 func (m *tabReview) ViewReview() string {
-	review := strings.ReplaceAll(m.selectedReview.Review, "\n", "\n\n")
-
-	return review
+	return m.reviewViewport.View()
 }
 
 func (m *tabReview) StoreReview() tea.Cmd {
