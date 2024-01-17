@@ -115,11 +115,6 @@ func (movieAPI *MovieAPI) Store(w http.ResponseWriter, r *http.Request, urlID st
 		return
 	}
 
-	if err := movieAPI.jq.Add(m.ID, job.ActionRefreshIMDBReviews); err != nil {
-		Error(w, http.StatusInternalServerError, "could not add job to queue", err, logger)
-		return
-	}
-
 	resBody, err := json.Marshal(m)
 	if err != nil {
 		Error(w, http.StatusInternalServerError, "could not marshal movie", err, logger)

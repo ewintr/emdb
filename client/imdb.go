@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
+	"ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/google/uuid"
 )
-
-type Review struct {
-	Source string
-	Review string
-}
 
 type IMDB struct {
 }
@@ -21,8 +19,8 @@ func NewIMDB() *IMDB {
 	return &IMDB{}
 }
 
-func (i *IMDB) GetReviews(imdbID string) (map[string]string, error) {
-	url := fmt.Sprintf("https://www.imdb.com/title/%s/reviews", imdbID)
+func (i *IMDB) GetReviews(m moviestore.Movie) ([]moviestore.Review, error) {
+	url := fmt.Sprintf("https://www.imdb.com/title/%s/reviews", m.IMDBID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -42,7 +40,7 @@ func (i *IMDB) GetReviews(imdbID string) (map[string]string, error) {
 	}
 	defer res.Body.Close()
 
-	reviews := make(map[string]string)
+	reviews := make([]moviestore.Review, 0)
 	doc.Find(".lister-item-content").Each(func(i int, reviewNode *goquery.Selection) {
 
 		var permaLink string
@@ -59,13 +57,21 @@ func (i *IMDB) GetReviews(imdbID string) (map[string]string, error) {
 			return
 		}
 
-		reviews[permaLink] = ScrubIMDBReview(reviewNode.Text())
+		rat, rev := ScrubIMDBReview(reviewNode.Text())
+		reviews = append(reviews, moviestore.Review{
+			ID:          uuid.New().String(),
+			MovieID:     m.ID,
+			Source:      moviestore.ReviewSourceIMDB,
+			URL:         fmt.Sprintf("https://www.imdb.com%s", permaLink),
+			Review:      rev,
+			MovieRating: rat,
+		})
 	})
 
 	return reviews, nil
 }
 
-func ScrubIMDBReview(review string) string {
+func ScrubIMDBReview(review string) (int, string) {
 	// remove footer
 	for _, text := range []string{"Was this review helpful?", "Sign in to vote.", "Permalink"} {
 		review = strings.ReplaceAll(review, text, "")
@@ -76,8 +82,16 @@ func ScrubIMDBReview(review string) string {
 	review = reWS.ReplaceAllString(review, "\n")
 
 	// remove superfluous newlines
-	re := regexp.MustCompile(`\n{3,}`)
-	review = re.ReplaceAllString(review, "\n\n")
+	reRev := regexp.MustCompile(`\n{3,}`)
+	review = reRev.ReplaceAllString(review, "\n\n")
 
-	return review
+	reRat := regexp.MustCompile(`(\d+)/10\n`)
+	reMatch := reRat.FindStringSubmatch(review)
+	var rating int
+	if len(reMatch) > 0 {
+		rating, _ = strconv.Atoi(reMatch[1])
+		review = strings.ReplaceAll(review, reMatch[0], "")
+	}
+
+	return rating, review
 }

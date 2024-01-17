@@ -67,6 +67,7 @@ var sqliteMigrations = []sqliteMigration{
 	`ALTER TABLE review ADD COLUMN "quality" INTEGER NOT NULL DEFAULT 0`,
 	`ALTER TABLE review DROP COLUMN "references"`,
 	`ALTER TABLE review ADD COLUMN "mentions" TEXT NOT NULL DEFAULT ""`,
+	`ALTER TABLE review ADD COLUMN "movie_rating" INTEGER NOT NULL DEFAULT 0`,
 }
 
 var (

@@ -6,12 +6,6 @@ import (
 
 type JobStatus string
 
-const (
-	JobStatusToDo  JobStatus = "todo"
-	JobStatusDoing JobStatus = "doing"
-	JobStatusDone  JobStatus = "done"
-)
-
 type Action string
 
 const (

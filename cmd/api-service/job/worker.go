@@ -5,7 +5,6 @@ import (
 
 	"ewintr.nl/emdb/client"
 	"ewintr.nl/emdb/cmd/api-service/moviestore"
-	"github.com/google/uuid"
 )
 
 type Worker struct {
@@ -41,6 +40,10 @@ func (w *Worker) Run() {
 	}
 }
 
+func (w *Worker) FindNewJobs() {
+
+}
+
 func (w *Worker) RefreshAllReviews(jobID int) {
 	logger := w.logger.With("method", "fetchReviews", "jobID", jobID)
 
@@ -72,20 +75,14 @@ func (w *Worker) RefreshReviews(jobID int, movieID string) {
 		return
 	}
 
-	reviews, err := w.imdb.GetReviews(m.IMDBID)
+	reviews, err := w.imdb.GetReviews(m)
 	if err != nil {
 		logger.Error("could not get reviews", "error", err)
 		return
 	}
 
-	for url, review := range reviews {
-		if err := w.reviewRepo.Store(moviestore.Review{
-			ID:      uuid.New().String(),
-			MovieID: m.ID,
-			Source:  moviestore.ReviewSourceIMDB,
-			URL:     url,
-			Review:  review,
-		}); err != nil {
+	for _, review := range reviews {
+		if err := w.reviewRepo.Store(review); err != nil {
 			logger.Error("could not store review", "error", err)
 			return
 		}

@@ -11,13 +11,14 @@ const (
 type ReviewSource string
 
 type Review struct {
-	ID       string
-	MovieID  string
-	Source   ReviewSource
-	URL      string
-	Review   string
-	Quality  int
-	Mentions []string
+	ID          string
+	MovieID     string
+	Source      ReviewSource
+	URL         string
+	Review      string
+	MovieRating int
+	Quality     int
+	Mentions    []string
 }
 
 type ReviewRepository struct {
@@ -31,8 +32,8 @@ func NewReviewRepository(db *SQLite) *ReviewRepository {
 }
 
 func (rr *ReviewRepository) Store(r Review) error {
-	if _, err := rr.db.Exec(`REPLACE INTO review (id, movie_id, source, url, review, quality, mentions) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		r.ID, r.MovieID, r.Source, r.URL, r.Review, r.Quality, strings.Join(r.Mentions, MentionsSeparator)); err != nil {
+	if _, err := rr.db.Exec(`REPLACE INTO review (id, movie_id, source, url, review, movie_rating, quality, mentions) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		r.ID, r.MovieID, r.Source, r.URL, r.Review, r.MovieRating, r.Quality, strings.Join(r.Mentions, MentionsSeparator)); err != nil {
 		return err
 	}
 
@@ -40,14 +41,14 @@ func (rr *ReviewRepository) Store(r Review) error {
 }
 
 func (rr *ReviewRepository) FindOne(id string) (Review, error) {
-	row := rr.db.QueryRow(`SELECT id, movie_id, source, url, review, quality, mentions FROM review WHERE id=?`, id)
+	row := rr.db.QueryRow(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentions FROM review WHERE id=?`, id)
 	if row.Err() != nil {
 		return Review{}, row.Err()
 	}
 
 	r := Review{}
 	var mentions string
-	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
+	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &mentions); err != nil {
 		return Review{}, err
 	}
 	r.Mentions = make([]string, 0)
@@ -58,7 +59,7 @@ func (rr *ReviewRepository) FindOne(id string) (Review, error) {
 }
 
 func (rr *ReviewRepository) FindByMovieID(movieID string) ([]Review, error) {
-	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, quality, mentions FROM review WHERE movie_id=?`, movieID)
+	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentions FROM review WHERE movie_id=?`, movieID)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +68,7 @@ func (rr *ReviewRepository) FindByMovieID(movieID string) ([]Review, error) {
 	var mentions string
 	for rows.Next() {
 		r := Review{}
-		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
+		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &mentions); err != nil {
 			return nil, err
 		}
 		r.Mentions = make([]string, 0)
@@ -82,14 +83,14 @@ func (rr *ReviewRepository) FindByMovieID(movieID string) ([]Review, error) {
 }
 
 func (rr *ReviewRepository) FindNextUnrated() (Review, error) {
-	row := rr.db.QueryRow(`SELECT id, movie_id, source, url, review, quality, mentions FROM review WHERE quality=0 LIMIT 1`)
+	row := rr.db.QueryRow(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentions FROM review WHERE quality=0 LIMIT 1`)
 	if row.Err() != nil {
 		return Review{}, row.Err()
 	}
 
 	r := Review{}
 	var mentions string
-	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
+	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &mentions); err != nil {
 		return Review{}, err
 	}
 	r.Mentions = make([]string, 0)
@@ -101,7 +102,7 @@ func (rr *ReviewRepository) FindNextUnrated() (Review, error) {
 }
 
 func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
-	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, quality, mentions FROM review WHERE quality=0`)
+	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentions FROM review WHERE quality=0`)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +111,7 @@ func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
 	var mentions string
 	for rows.Next() {
 		r := Review{}
-		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
+		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &mentions); err != nil {
 			return nil, err
 		}
 		r.Mentions = make([]string, 0)
@@ -125,7 +126,7 @@ func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
 }
 
 func (rr *ReviewRepository) FindAll() ([]Review, error) {
-	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, quality, mentions FROM review`)
+	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentions FROM review`)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func (rr *ReviewRepository) FindAll() ([]Review, error) {
 	var mentions string
 	for rows.Next() {
 		r := Review{}
-		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.Quality, &mentions); err != nil {
+		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &mentions); err != nil {
 			return nil, err
 		}
 		r.Mentions = make([]string, 0)
