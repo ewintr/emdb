@@ -25,17 +25,6 @@ func NewEMDB(baseURL string, apiKey string) *EMDB {
 }
 
 func (e *EMDB) GetMovies() ([]moviestore.Movie, error) {
-	//var movies []model.Movie
-	//for i := 0; i < 5; i++ {
-	//	movies = append(movies, model.Movie{
-	//		ID:     fmt.Sprintf("id-%d", i),
-	//		TMDBID: int64(i),
-	//		IMDBID: fmt.Sprintf("tt%07d", i),
-	//		Title:  fmt.Sprintf("Movie %d", i),
-	//	})
-	//}
-	//return movies, nil
-
 	url := fmt.Sprintf("%s/movie", e.baseURL)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -199,6 +188,39 @@ func (e *EMDB) UpdateReview(review moviestore.Review) error {
 
 	url := fmt.Sprintf("%s/review/%s", e.baseURL, review.ID)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Authorization", e.apiKey)
+
+	resp, err := e.c.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (e *EMDB) CreateJob(movieID, action string) error {
+	j := struct {
+		MovieID string
+		Action  string
+	}{
+		MovieID: movieID,
+		Action:  action,
+	}
+
+	body, err := json.Marshal(j)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/job", e.baseURL)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

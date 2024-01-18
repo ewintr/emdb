@@ -1,6 +1,7 @@
 package job
 
 import (
+	"slices"
 	"time"
 )
 
@@ -29,4 +30,12 @@ type Job struct {
 	Status  JobStatus
 	Created time.Time
 	Updated time.Time
+}
+
+func Valid(action Action) bool {
+	if slices.Contains(validActions, action) {
+		return true
+	}
+
+	return false
 }

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"slices"
 	"time"
 
 	"ewintr.nl/emdb/cmd/api-service/moviestore"
@@ -25,8 +24,8 @@ func NewJobQueue(db *moviestore.SQLite, logger *slog.Logger) *JobQueue {
 }
 
 func (jq *JobQueue) Add(movieID string, action Action) error {
-	if !slices.Contains(validActions, action) {
-		return errors.New("unknown action")
+	if !Valid(action) {
+		return errors.New("invalid action")
 	}
 
 	_, err := jq.db.Exec(`INSERT INTO job_queue (movie_id, action, status) 
@@ -48,7 +47,7 @@ func (jq *JobQueue) Run() {
 SELECT id, movie_id, action 
 FROM job_queue
 WHERE status='todo'
-ORDER BY id DESC
+ORDER BY id ASC
 LIMIT 1`)
 
 		var job Job
