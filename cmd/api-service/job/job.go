@@ -9,7 +9,7 @@ type JobStatus string
 type Action string
 
 const (
-	interval = 10 * time.Second
+	interval = 20 * time.Second
 
 	ActionRefreshIMDBReviews    Action = "refresh-imdb-reviews"
 	ActionRefreshAllIMDBReviews Action = "refresh-all-imdb-reviews"

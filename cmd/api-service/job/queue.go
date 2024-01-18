@@ -43,6 +43,7 @@ func (jq *JobQueue) Run() {
 	logger := jq.logger.With("method", "run")
 	logger.Info("starting job queue")
 	for {
+		time.Sleep(interval)
 		row := jq.db.QueryRow(`
 SELECT id, movie_id, action 
 FROM job_queue
@@ -55,11 +56,9 @@ LIMIT 1`)
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
 			logger.Info("nothing to do")
-			time.Sleep(interval)
 			continue
 		case err != nil:
 			logger.Error("could not fetch next job", "error", row.Err())
-			time.Sleep(interval)
 			continue
 		}
 		logger.Info("found a job", "id", job.ID)
@@ -69,7 +68,6 @@ UPDATE job_queue
 SET status='doing'
 WHERE id=?`, job.ID); err != nil {
 			logger.Error("could not set job to doing", "error")
-			time.Sleep(interval)
 			continue
 		}
 
@@ -80,8 +78,7 @@ WHERE id=?`, job.ID); err != nil {
 func (jq *JobQueue) MarkDone(id int) {
 	logger := jq.logger.With("method", "markdone")
 	if _, err := jq.db.Exec(`
-UPDATE job_queue SET 
-status='done'
+DELETE FROM job_queue
 WHERE id=?`, id); err != nil {
 		logger.Error("could not mark job done", "error", err)
 	}
