@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"slices"
 	"time"
 
 	"ewintr.nl/emdb/cmd/api-service/moviestore"
@@ -24,6 +25,10 @@ func NewJobQueue(db *moviestore.SQLite, logger *slog.Logger) *JobQueue {
 }
 
 func (jq *JobQueue) Add(movieID string, action Action) error {
+	if !slices.Contains(validActions, action) {
+		return errors.New("unknown action")
+	}
+
 	_, err := jq.db.Exec(`INSERT INTO job_queue (movie_id, action, status) 
 	VALUES (?, ?, 'todo')`, movieID, action)
 
@@ -81,4 +86,34 @@ WHERE id=?`, id); err != nil {
 		logger.Error("could not mark job done", "error", err)
 	}
 	return
+}
+
+func (jq *JobQueue) List() ([]Job, error) {
+	rows, err := jq.db.Query(`
+SELECT id, movie_id, action, status, created_at, updated_at
+FROM job_queue
+ORDER BY id DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var jobs []Job
+	for rows.Next() {
+		var j Job
+		if err := rows.Scan(&j.ID, &j.MovieID, &j.Action, &j.Status, &j.Created, &j.Updated); err != nil {
+			return nil, err
+		}
+		jobs = append(jobs, j)
+	}
+	return jobs, nil
+}
+
+func (jq *JobQueue) Delete(id string) error {
+	if _, err := jq.db.Exec(`
+DELETE FROM job_queue
+WHERE id=?`, id); err != nil {
+		return err
+	}
+	return nil
 }

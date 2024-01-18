@@ -40,10 +40,6 @@ func (w *Worker) Run() {
 	}
 }
 
-func (w *Worker) FindNewJobs() {
-
-}
-
 func (w *Worker) RefreshAllReviews(jobID int) {
 	logger := w.logger.With("method", "fetchReviews", "jobID", jobID)
 

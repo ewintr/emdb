@@ -38,7 +38,7 @@ func main() {
 	go worker.Run()
 
 	apis := handler.APIIndex{
-		"admin": handler.NewAdminAPI(jobQueue, logger),
+		"job": handler.NewJobAPI(jobQueue, logger),
 		"movie": handler.NewMovieAPI(handler.APIIndex{
 			"review": handler.NewMovieReviewAPI(moviestore.NewReviewRepository(db), logger),
 		}, moviestore.NewMovieRepository(db), jobQueue, logger),

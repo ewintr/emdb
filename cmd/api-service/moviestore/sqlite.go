@@ -68,6 +68,30 @@ var sqliteMigrations = []sqliteMigration{
 	`ALTER TABLE review DROP COLUMN "references"`,
 	`ALTER TABLE review ADD COLUMN "mentions" TEXT NOT NULL DEFAULT ""`,
 	`ALTER TABLE review ADD COLUMN "movie_rating" INTEGER NOT NULL DEFAULT 0`,
+	`BEGIN TRANSACTION;
+		CREATE TABLE job_queue_new (
+			"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+			"movie_id" TEXT NOT NULL,
+			"action" TEXT NOT NULL DEFAULT "",
+			"status" TEXT NOT NULL DEFAULT "",
+			"created_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
+    	"updated_at" DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+	INSERT INTO job_queue_new (id, movie_id, action, status)
+		SELECT id, movie_id, action, status FROM job_queue;
+	DROP TABLE job_queue;
+	ALTER TABLE job_queue_new RENAME TO job_queue;
+	COMMIT`,
+	`CREATE TRIGGER set_timestamp_after_insert
+		AFTER INSERT ON job_queue
+		BEGIN
+    	UPDATE job_queue SET created_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE rowid = new.rowid;
+		END;
+	CREATE TRIGGER set_timestamp_after_update
+		AFTER UPDATE ON job_queue
+		BEGIN
+    	UPDATE job_queue SET updated_at = CURRENT_TIMESTAMP WHERE rowid = old.rowid;
+	END;`,
 }
 
 var (
