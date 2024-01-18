@@ -31,6 +31,8 @@ func (jobAPI *JobAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		jobAPI.List(w, r)
 	case r.Method == http.MethodDelete && subPath != "":
 		jobAPI.Delete(w, r, subPath)
+	case r.Method == http.MethodDelete && subPath == "":
+		jobAPI.DeleteAll(w, r)
 	default:
 		Error(w, http.StatusNotFound, "unregistered path", nil, logger)
 	}
@@ -76,6 +78,17 @@ func (jobAPI *JobAPI) Delete(w http.ResponseWriter, r *http.Request, id string) 
 
 	if err := jobAPI.jq.Delete(id); err != nil {
 		Error(w, http.StatusInternalServerError, "could not delete job", err, logger)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (jobAPI *JobAPI) DeleteAll(w http.ResponseWriter, r *http.Request) {
+	logger := jobAPI.logger.With("method", "deleteall")
+
+	if err := jobAPI.jq.DeleteAll(); err != nil {
+		Error(w, http.StatusInternalServerError, "could not delete all jobs", err, logger)
 		return
 	}
 

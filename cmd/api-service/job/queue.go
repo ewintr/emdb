@@ -77,7 +77,7 @@ WHERE id=?`, job.ID); err != nil {
 	}
 }
 
-func (jq *JobQueue) MarkDone(id string) {
+func (jq *JobQueue) MarkDone(id int) {
 	logger := jq.logger.With("method", "markdone")
 	if _, err := jq.db.Exec(`
 UPDATE job_queue SET 
@@ -113,6 +113,14 @@ func (jq *JobQueue) Delete(id string) error {
 	if _, err := jq.db.Exec(`
 DELETE FROM job_queue
 WHERE id=?`, id); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (jq *JobQueue) DeleteAll() error {
+	if _, err := jq.db.Exec(`
+DELETE FROM job_queue`); err != nil {
 		return err
 	}
 	return nil

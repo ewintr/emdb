@@ -55,6 +55,9 @@ func (w *Worker) RefreshAllReviews(jobID int) {
 			return
 		}
 	}
+
+	logger.Info("refresh all reviews", "count", len(movies))
+	w.jq.MarkDone(jobID)
 }
 
 func (w *Worker) RefreshReviews(jobID int, movieID string) {
@@ -85,4 +88,5 @@ func (w *Worker) RefreshReviews(jobID int, movieID string) {
 	}
 
 	logger.Info("refresh reviews", "count", len(reviews))
+	w.jq.MarkDone(jobID)
 }
