@@ -34,20 +34,20 @@ Just answer with the JSON and nothing else. When in doubt about whether a title 
 func main() {
 	//movieID := "c313ffa9-1cec-4d37-be6e-a4e18c247a0f" // night train
 	//movieID := "07fb2a59-24ec-442e-aa9e-eb7e4fb002db" // battle royale
-	movieID := "2fce2f8f-a048-4e39-8ffe-82df09a29d32" // shadows in paradise
+	//movieID := "2fce2f8f-a048-4e39-8ffe-82df09a29d32" // shadows in paradise
 
 	emdb := client.NewEMDB(os.Getenv("EMDB_BASE_URL"), os.Getenv("EMDB_API_KEY"))
-	movie, err := emdb.GetMovie(movieID)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	reviews, err := emdb.GetReviews(movieID)
+	review, err := emdb.GetNextNoTitlesReview()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
+	movie, err := emdb.GetMovie(review.MovieID)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	llm, err := ollama.New(ollama.WithModel("mistral"))
 	if err != nil {
 		fmt.Println(err)
@@ -63,42 +63,37 @@ func main() {
 	llmChain := chains.NewLLMChain(llm, prompt)
 
 	fmt.Printf("Processing review for movie: %s\n", movie.Title)
-	for _, review := range reviews {
-		fmt.Printf("Review: %s\n", review.Review)
-		outputValues, err := chains.Call(ctx, llmChain, map[string]any{
-			"title":  movie.Title,
-			"review": review.Review,
-		})
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+	fmt.Printf("Review: %s\n", review.Review)
+	outputValues, err := chains.Call(ctx, llmChain, map[string]any{
+		"title":  movie.Title,
+		"review": review.Review,
+	})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
-		out, ok := outputValues[llmChain.OutputKey].(string)
-		if !ok {
-			fmt.Println("invalid chain return")
-		}
-		fmt.Println(out)
-		resp := struct {
-			Movies  []string `json:"movies"`
-			TVShows []string `json:"tvShows"`
-			Games   []string `json:"games"`
-			Books   []string `json:"books"`
-		}{}
+	out, ok := outputValues[llmChain.OutputKey].(string)
+	if !ok {
+		fmt.Println("invalid chain return")
+	}
+	fmt.Println(out)
+	resp := struct {
+		Movies  []string `json:"movies"`
+		TVShows []string `json:"tvShows"`
+		Games   []string `json:"games"`
+		Books   []string `json:"books"`
+	}{}
 
-		if err := json.Unmarshal([]byte(out), &resp); err != nil {
-			fmt.Printf("could not unmarshal llm response, skipping this one: %s", err)
-			continue
-		}
+	if err := json.Unmarshal([]byte(out), &resp); err != nil {
+		fmt.Printf("could not unmarshal llm response, skipping this one: %s", err)
+		os.Exit(1)
+	}
 
-		fmt.Printf("Movies: %v\n", resp.Movies)
+	review.Titles = resp
 
-		review.Titles = resp
-
-		if err := emdb.UpdateReview(review); err != nil {
-			fmt.Printf("could not update review: %s\n", err)
-			continue
-		}
-
+	if err := emdb.UpdateReview(review); err != nil {
+		fmt.Printf("could not update review: %s\n", err)
+		os.Exit(1)
 	}
 }

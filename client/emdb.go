@@ -208,6 +208,34 @@ func (e *EMDB) GetNextUnratedReview() (moviestore.Review, error) {
 	return review, nil
 }
 
+func (e *EMDB) GetNextNoTitlesReview() (moviestore.Review, error) {
+	url := fmt.Sprintf("%s/review/no-titles/next", e.baseURL)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return moviestore.Review{}, err
+	}
+	req.Header.Add("Authorization", e.apiKey)
+
+	resp, err := e.c.Do(req)
+	if err != nil {
+		return moviestore.Review{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return moviestore.Review{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	var review moviestore.Review
+	if err := json.Unmarshal(body, &review); err != nil {
+		return moviestore.Review{}, err
+	}
+
+	return review, nil
+}
+
 func (e *EMDB) UpdateReview(review moviestore.Review) error {
 	body, err := json.Marshal(review)
 	if err != nil {
