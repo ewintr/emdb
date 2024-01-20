@@ -42,7 +42,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rec.Header().Add("Content-Type", "application/json")
 
 	// authenticate
-	logger.Info("authenticating", "key", r.Header.Get("Authorization"), "apiKey", s.apiKey)
 	if key := r.Header.Get("Authorization"); s.apiKey != "localOnly" && key != s.apiKey {
 		Error(rec, http.StatusUnauthorized, "unauthorized", fmt.Errorf("invalid api key"), logger)
 		logger.Info("unauthorized", "key", key)
