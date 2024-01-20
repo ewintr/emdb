@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"ewintr.nl/emdb/client"
 	"github.com/tmc/langchaingo/chains"
@@ -19,86 +21,93 @@ const (
 {{.review}}
 ---- 
 
-If you found any movie titles other than {{.title}}, list them below in a JSON array. If there are other titles, like TV shows, books or games, separate them according to the following schema:
+If you found any movie titles other than {{.title}}, list them below in a JSON array. If there are other titles, like TV shows, books or games, ignore them. The format is as follows:
 
-{
-"movies": ["movie title 1", "movie title 2"],
-"tvShows": ["tv series 1"],
-"games": ["game 1", "game 2"],
-"books": ["book"]
-}
+["movie title 1", "movie title 2"]
 
-Just answer with the JSON and nothing else. When in doubt about whether a title is a movie or another category, don't put it in movies, but in the other category.  `
+Just answer with the JSON and nothing else. If you don't see any other movie titles, just answer with an empty array.`
 )
 
 func main() {
-	//movieID := "c313ffa9-1cec-4d37-be6e-a4e18c247a0f" // night train
-	//movieID := "07fb2a59-24ec-442e-aa9e-eb7e4fb002db" // battle royale
-	//movieID := "2fce2f8f-a048-4e39-8ffe-82df09a29d32" // shadows in paradise
-
 	emdb := client.NewEMDB(os.Getenv("EMDB_BASE_URL"), os.Getenv("EMDB_API_KEY"))
-	j, err := emdb.GetNextAIJob()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	review, err := emdb.GetReview(j.ActionID)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 
-	movie, err := emdb.GetMovie(review.MovieID)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	llm, err := ollama.New(ollama.WithModel("mistral"))
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	go Work(emdb)
 
-	ctx := context.Background()
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	<-c
+}
 
-	prompt := prompts.NewPromptTemplate(
-		mentionsTemplate,
-		[]string{"title", "review"},
-	)
-	llmChain := chains.NewLLMChain(llm, prompt)
+func Work(emdb *client.EMDB) {
+	for {
+		j, err := emdb.GetNextAIJob()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		review, err := emdb.GetReview(j.ActionID)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-	fmt.Printf("Processing review for movie: %s\n", movie.Title)
-	fmt.Printf("Review: %s\n", review.Review)
-	outputValues, err := chains.Call(ctx, llmChain, map[string]any{
-		"title":  movie.Title,
-		"review": review.Review,
-	})
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+		movie, err := emdb.GetMovie(review.MovieID)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		llm, err := ollama.New(ollama.WithModel("mistral"))
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-	out, ok := outputValues[llmChain.OutputKey].(string)
-	if !ok {
-		fmt.Println("invalid chain return")
-	}
-	fmt.Println(out)
-	resp := struct {
-		Movies  []string `json:"movies"`
-		TVShows []string `json:"tvShows"`
-		Games   []string `json:"games"`
-		Books   []string `json:"books"`
-	}{}
+		ctx := context.Background()
 
-	if err := json.Unmarshal([]byte(out), &resp); err != nil {
-		fmt.Printf("could not unmarshal llm response, skipping this one: %s", err)
-		os.Exit(1)
-	}
+		prompt := prompts.NewPromptTemplate(
+			mentionsTemplate,
+			[]string{"title", "review"},
+		)
+		llmChain := chains.NewLLMChain(llm, prompt)
 
-	review.Titles = resp
+		movieTitle := movie.Title
+		if movie.EnglishTitle != "" && movie.EnglishTitle != movie.Title {
+			movieTitle = fmt.Sprintf("%s (English title: %s)", movieTitle, movie.EnglishTitle)
+		}
+		fmt.Printf("Processing review for movie: %s\n", movieTitle)
+		fmt.Printf("Review: %s\n", review.Review)
 
-	if err := emdb.UpdateReview(review); err != nil {
-		fmt.Printf("could not update review: %s\n", err)
-		os.Exit(1)
+		outputValues, err := chains.Call(ctx, llmChain, map[string]any{
+			"title":  movieTitle,
+			"review": review.Review,
+		})
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		out, ok := outputValues[llmChain.OutputKey].(string)
+		if !ok {
+			fmt.Println("invalid chain return")
+		}
+		fmt.Println(out)
+		resp := struct {
+			Movies  []string `json:"movies"`
+			TVShows []string `json:"tvShows"`
+			Games   []string `json:"games"`
+			Books   []string `json:"books"`
+		}{}
+
+		if err := json.Unmarshal([]byte(out), &resp); err != nil {
+			fmt.Printf("could not unmarshal llm response, skipping this one: %s", err)
+			os.Exit(1)
+		}
+
+		review.Titles = resp
+
+		if err := emdb.UpdateReview(review); err != nil {
+			fmt.Printf("could not update review: %s\n", err)
+			os.Exit(1)
+		}
 	}
 }
