@@ -27,7 +27,7 @@ func (jq *JobQueue) Add(movieID, action string) error {
 		return errors.New("invalid action")
 	}
 
-	_, err := jq.db.Exec(`INSERT INTO job_queue (movie_id, action, status) 
+	_, err := jq.db.Exec(`INSERT INTO job_queue (action_id, action, status) 
 	VALUES (?, ?, 'todo')`, movieID, action)
 
 	return err
@@ -42,7 +42,7 @@ func (jq *JobQueue) Next(t Type) (Job, error) {
 	}
 	actionsStr := fmt.Sprintf("('%s')", strings.Join(actions, "', '"))
 	query := fmt.Sprintf(`
-SELECT id, movie_id, action
+SELECT id, action_id, action
 FROM job_queue
 WHERE status='todo'
 	AND action IN %s
@@ -93,7 +93,7 @@ WHERE id=?`, id); err != nil {
 
 func (jq *JobQueue) List() ([]Job, error) {
 	rows, err := jq.db.Query(`
-SELECT id, movie_id, action, status, created_at, updated_at
+SELECT id, action_id, action, status, created_at, updated_at
 FROM job_queue
 ORDER BY id DESC`)
 	if err != nil {
