@@ -33,7 +33,7 @@ func (w *Worker) Run() {
 	logger.Info("starting worker")
 	for {
 		time.Sleep(interval)
-		j, err := w.jq.Next(TypeSimple)
+		j, err := w.jq.Next(moviestore.TypeSimple)
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
 			logger.Info("no simple jobs found")
@@ -45,11 +45,11 @@ func (w *Worker) Run() {
 
 		logger.Info("got a new job", "jobID", j.ID, "movieID", j.ActionID, "action", j.Action)
 		switch j.Action {
-		case ActionRefreshIMDBReviews:
+		case moviestore.ActionRefreshIMDBReviews:
 			w.RefreshReviews(j.ID, j.ActionID)
-		case ActionRefreshAllIMDBReviews:
+		case moviestore.ActionRefreshAllIMDBReviews:
 			w.RefreshAllReviews(j.ID)
-		case ActionFindAllTitles:
+		case moviestore.ActionFindAllTitles:
 			w.FindAllTitles(j.ID)
 		default:
 			logger.Error("unknown job action", "action", j.Action)
@@ -68,7 +68,7 @@ func (w *Worker) RefreshAllReviews(jobID int) {
 
 	for _, m := range movies {
 		time.Sleep(1 * time.Second)
-		if err := w.jq.Add(m.ID, ActionRefreshIMDBReviews); err != nil {
+		if err := w.jq.Add(m.ID, moviestore.ActionRefreshIMDBReviews); err != nil {
 			logger.Error("could not add job", "error", err)
 			return
 		}
@@ -90,7 +90,7 @@ func (w *Worker) FindAllTitles(jobID int) {
 
 	for _, r := range reviews {
 		time.Sleep(1 * time.Second)
-		if err := w.jq.Add(r.ID, ActionFindTitles); err != nil {
+		if err := w.jq.Add(r.ID, moviestore.ActionFindTitles); err != nil {
 			logger.Error("could not add job", "error", err)
 			w.jq.MarkFailed(jobID)
 			return

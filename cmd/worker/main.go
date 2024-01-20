@@ -37,7 +37,12 @@ func main() {
 	//movieID := "2fce2f8f-a048-4e39-8ffe-82df09a29d32" // shadows in paradise
 
 	emdb := client.NewEMDB(os.Getenv("EMDB_BASE_URL"), os.Getenv("EMDB_API_KEY"))
-	review, err := emdb.GetNextNoTitlesReview()
+	j, err := emdb.GetNextAIJob()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	review, err := emdb.GetReview(j.ActionID)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

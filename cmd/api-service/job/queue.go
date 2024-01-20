@@ -23,7 +23,7 @@ func NewJobQueue(db *moviestore.SQLite, logger *slog.Logger) *JobQueue {
 }
 
 func (jq *JobQueue) Add(movieID, action string) error {
-	if !Valid(action) {
+	if !moviestore.Valid(action) {
 		return errors.New("invalid action")
 	}
 
@@ -33,12 +33,12 @@ func (jq *JobQueue) Add(movieID, action string) error {
 	return err
 }
 
-func (jq *JobQueue) Next(t Type) (Job, error) {
+func (jq *JobQueue) Next(t moviestore.JobType) (moviestore.Job, error) {
 	logger := jq.logger.With("method", "next")
 
-	actions := simpleActions
-	if t == TypeAI {
-		actions = aiActions
+	actions := moviestore.SimpleActions
+	if t == moviestore.TypeAI {
+		actions = moviestore.AIActions
 	}
 	actionsStr := fmt.Sprintf("('%s')", strings.Join(actions, "', '"))
 	query := fmt.Sprintf(`
@@ -49,13 +49,13 @@ WHERE status='todo'
 ORDER BY id ASC
 LIMIT 1`, actionsStr)
 	row := jq.db.QueryRow(query)
-	var job Job
+	var job moviestore.Job
 	err := row.Scan(&job.ID, &job.ActionID, &job.Action)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			logger.Error("could not fetch next job", "error", err)
 		}
-		return Job{}, err
+		return moviestore.Job{}, err
 	}
 
 	logger.Info("found a job", "id", job.ID)
@@ -64,7 +64,7 @@ UPDATE job_queue
 SET status='doing'
 WHERE id=?`, job.ID); err != nil {
 		logger.Error("could not set job to doing", "error")
-		return Job{}, err
+		return moviestore.Job{}, err
 	}
 
 	return job, nil
@@ -91,7 +91,7 @@ WHERE id=?`, id); err != nil {
 	return
 }
 
-func (jq *JobQueue) List() ([]Job, error) {
+func (jq *JobQueue) List() ([]moviestore.Job, error) {
 	rows, err := jq.db.Query(`
 SELECT id, action_id, action, status, created_at, updated_at
 FROM job_queue
@@ -101,9 +101,9 @@ ORDER BY id DESC`)
 	}
 	defer rows.Close()
 
-	var jobs []Job
+	var jobs []moviestore.Job
 	for rows.Next() {
-		var j Job
+		var j moviestore.Job
 		if err := rows.Scan(&j.ID, &j.ActionID, &j.Action, &j.Status, &j.Created, &j.Updated); err != nil {
 			return nil, err
 		}

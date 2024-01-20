@@ -180,8 +180,8 @@ func (e *EMDB) GetReviews(movieID string) ([]moviestore.Review, error) {
 	return reviews, nil
 }
 
-func (e *EMDB) GetNextUnratedReview() (moviestore.Review, error) {
-	url := fmt.Sprintf("%s/review/unrated/next", e.baseURL)
+func (e *EMDB) GetReview(id string) (moviestore.Review, error) {
+	url := fmt.Sprintf("%s/review/%s", e.baseURL, id)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return moviestore.Review{}, err
@@ -208,8 +208,8 @@ func (e *EMDB) GetNextUnratedReview() (moviestore.Review, error) {
 	return review, nil
 }
 
-func (e *EMDB) GetNextNoTitlesReview() (moviestore.Review, error) {
-	url := fmt.Sprintf("%s/review/no-titles/next", e.baseURL)
+func (e *EMDB) GetNextUnratedReview() (moviestore.Review, error) {
+	url := fmt.Sprintf("%s/review/unrated/next", e.baseURL)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return moviestore.Review{}, err
@@ -292,4 +292,32 @@ func (e *EMDB) CreateJob(movieID, action string) error {
 	}
 
 	return nil
+}
+
+func (e *EMDB) GetNextAIJob() (moviestore.Job, error) {
+	url := fmt.Sprintf("%s/job/next-ai", e.baseURL)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return moviestore.Job{}, err
+	}
+	req.Header.Add("Authorization", e.apiKey)
+
+	resp, err := e.c.Do(req)
+	if err != nil {
+		return moviestore.Job{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return moviestore.Job{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	var j moviestore.Job
+	if err := json.Unmarshal(body, &j); err != nil {
+		return moviestore.Job{}, err
+	}
+
+	return j, nil
 }

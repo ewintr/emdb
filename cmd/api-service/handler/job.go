@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"ewintr.nl/emdb/cmd/api-service/job"
+	"ewintr.nl/emdb/cmd/api-service/moviestore"
 )
 
 type JobAPI struct {
@@ -46,7 +47,7 @@ func (jobAPI *JobAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (jobAPI *JobAPI) Add(w http.ResponseWriter, r *http.Request) {
 	logger := jobAPI.logger.With("method", "add")
 
-	var j job.Job
+	var j moviestore.Job
 	if err := json.NewDecoder(r.Body).Decode(&j); err != nil {
 		Error(w, http.StatusBadRequest, "could not decode job", err, logger)
 		return
@@ -81,7 +82,7 @@ func (jobAPI *JobAPI) List(w http.ResponseWriter, r *http.Request) {
 func (jobAPI *JobAPI) NextAI(w http.ResponseWriter, r *http.Request) {
 	logger := jobAPI.logger.With("method", "nextai")
 
-	j, err := jobAPI.jq.Next(job.TypeAI)
+	j, err := jobAPI.jq.Next(moviestore.TypeAI)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		logger.Info("no ai jobs found")
