@@ -52,7 +52,7 @@ func (jobAPI *JobAPI) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := jobAPI.jq.Add(j.MovieID, j.Action); err != nil {
+	if err := jobAPI.jq.Add(j.ActionID, j.Action); err != nil {
 		Error(w, http.StatusInternalServerError, "could not add job", err, logger)
 		return
 	}

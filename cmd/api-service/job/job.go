@@ -34,12 +34,12 @@ var (
 )
 
 type Job struct {
-	ID      int
-	MovieID string
-	Action  string
-	Status  Status
-	Created time.Time
-	Updated time.Time
+	ID       int
+	ActionID string
+	Action   string
+	Status   Status
+	Created  time.Time
+	Updated  time.Time
 }
 
 func Valid(action string) bool {

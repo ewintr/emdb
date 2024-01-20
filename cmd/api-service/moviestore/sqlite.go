@@ -96,6 +96,20 @@ var sqliteMigrations = []sqliteMigration{
 	`ALTER TABLE review DROP COLUMN "mentions"`,
 	`ALTER TABLE review DROP COLUMN "mentioned_titles"`,
 	`ALTER TABLE review ADD COLUMN "mentioned_titles" JSON NOT NULL Default '{}'`,
+	`BEGIN TRANSACTION;
+		CREATE TABLE job_queue_new (
+			"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+			"action_id" TEXT NOT NULL,
+			"action" TEXT NOT NULL DEFAULT "",
+			"status" TEXT NOT NULL DEFAULT "",
+			"created_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
+    	"updated_at" DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+	INSERT INTO job_queue_new (id, action_id, action, status)
+		SELECT id, movie_id, action, status FROM job_queue;
+	DROP TABLE job_queue;
+	ALTER TABLE job_queue_new RENAME TO job_queue;
+	COMMIT`,
 }
 
 var (

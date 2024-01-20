@@ -50,7 +50,7 @@ ORDER BY id ASC
 LIMIT 1`, actionsStr)
 	row := jq.db.QueryRow(query)
 	var job Job
-	err := row.Scan(&job.ID, &job.MovieID, &job.Action)
+	err := row.Scan(&job.ID, &job.ActionID, &job.Action)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			logger.Error("could not fetch next job", "error", err)
@@ -80,6 +80,17 @@ WHERE id=?`, id); err != nil {
 	return
 }
 
+func (jq *JobQueue) MarkFailed(id int) {
+	logger := jq.logger.With("method", "markfailed")
+	if _, err := jq.db.Exec(`
+UPDATE job_queue
+SET status='failed'
+WHERE id=?`, id); err != nil {
+		logger.Error("could not mark job failed", "error", err)
+	}
+	return
+}
+
 func (jq *JobQueue) List() ([]Job, error) {
 	rows, err := jq.db.Query(`
 SELECT id, movie_id, action, status, created_at, updated_at
@@ -93,7 +104,7 @@ ORDER BY id DESC`)
 	var jobs []Job
 	for rows.Next() {
 		var j Job
-		if err := rows.Scan(&j.ID, &j.MovieID, &j.Action, &j.Status, &j.Created, &j.Updated); err != nil {
+		if err := rows.Scan(&j.ID, &j.ActionID, &j.Action, &j.Status, &j.Created, &j.Updated); err != nil {
 			return nil, err
 		}
 		jobs = append(jobs, j)

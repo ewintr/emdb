@@ -43,12 +43,14 @@ func (w *Worker) Run() {
 			continue
 		}
 
-		logger.Info("got a new job", "jobID", j.ID, "movieID", j.MovieID, "action", j.Action)
+		logger.Info("got a new job", "jobID", j.ID, "movieID", j.ActionID, "action", j.Action)
 		switch j.Action {
 		case ActionRefreshIMDBReviews:
-			w.RefreshReviews(j.ID, j.MovieID)
+			w.RefreshReviews(j.ID, j.ActionID)
 		case ActionRefreshAllIMDBReviews:
 			w.RefreshAllReviews(j.ID)
+		case ActionFindAllTitles:
+			w.FindAllTitles(j.ID)
 		default:
 			logger.Error("unknown job action", "action", j.Action)
 		}
@@ -65,6 +67,7 @@ func (w *Worker) RefreshAllReviews(jobID int) {
 	}
 
 	for _, m := range movies {
+		time.Sleep(1 * time.Second)
 		if err := w.jq.Add(m.ID, ActionRefreshIMDBReviews); err != nil {
 			logger.Error("could not add job", "error", err)
 			return
@@ -75,29 +78,56 @@ func (w *Worker) RefreshAllReviews(jobID int) {
 	w.jq.MarkDone(jobID)
 }
 
+func (w *Worker) FindAllTitles(jobID int) {
+	logger := w.logger.With("method", "findTitles", "jobID", jobID)
+
+	reviews, err := w.reviewRepo.FindAll()
+	if err != nil {
+		logger.Error("could not get reviews", "error", err)
+		w.jq.MarkFailed(jobID)
+		return
+	}
+
+	for _, r := range reviews {
+		time.Sleep(1 * time.Second)
+		if err := w.jq.Add(r.ID, ActionFindTitles); err != nil {
+			logger.Error("could not add job", "error", err)
+			w.jq.MarkFailed(jobID)
+			return
+		}
+	}
+
+	logger.Info("find all titles", "count", len(reviews))
+	w.jq.MarkDone(jobID)
+}
+
 func (w *Worker) RefreshReviews(jobID int, movieID string) {
 	logger := w.logger.With("method", "fetchReviews", "jobID", jobID, "movieID", movieID)
 
 	m, err := w.movieRepo.FindOne(movieID)
 	if err != nil {
 		logger.Error("could not get movie", "error", err)
+		w.jq.MarkFailed(jobID)
 		return
 	}
 
 	if err := w.reviewRepo.DeleteByMovieID(m.ID); err != nil {
 		logger.Error("could not delete reviews", "error", err)
+		w.jq.MarkFailed(jobID)
 		return
 	}
 
 	reviews, err := w.imdb.GetReviews(m)
 	if err != nil {
 		logger.Error("could not get reviews", "error", err)
+		w.jq.MarkFailed(jobID)
 		return
 	}
 
 	for _, review := range reviews {
 		if err := w.reviewRepo.Store(review); err != nil {
 			logger.Error("could not store review", "error", err)
+			w.jq.MarkFailed(jobID)
 			return
 		}
 	}
