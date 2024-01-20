@@ -94,6 +94,8 @@ var sqliteMigrations = []sqliteMigration{
 	END;`,
 	`ALTER TABLE review ADD COLUMN "mentioned_titles" JSON`,
 	`ALTER TABLE review DROP COLUMN "mentions"`,
+	`ALTER TABLE review DROP COLUMN "mentioned_titles"`,
+	`ALTER TABLE review ADD COLUMN "mentioned_titles" JSON NOT NULL Default '{}'`,
 }
 
 var (
