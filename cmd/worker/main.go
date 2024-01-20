@@ -93,5 +93,12 @@ func main() {
 
 		fmt.Printf("Movies: %v\n", resp.Movies)
 
+		review.Titles = resp
+
+		if err := emdb.UpdateReview(review); err != nil {
+			fmt.Printf("could not update review: %s\n", err)
+			continue
+		}
+
 	}
 }

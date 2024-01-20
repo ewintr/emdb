@@ -135,6 +135,29 @@ func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
 	return reviews, nil
 }
 
+func (rr *ReviewRepository) FindNoTitles() ([]Review, error) {
+	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles FROM review WHERE mentioned_titles='{}'`)
+	if err != nil {
+		return nil, err
+	}
+
+	reviews := make([]Review, 0)
+	var titles string
+	for rows.Next() {
+		r := Review{}
+		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+			return []Review{}, err
+		}
+		reviews = append(reviews, r)
+	}
+	rows.Close()
+
+	return reviews, nil
+}
+
 func (rr *ReviewRepository) FindAll() ([]Review, error) {
 	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles FROM review`)
 	if err != nil {
