@@ -33,7 +33,6 @@ func main() {
 	}
 
 	jobQueue := job.NewJobQueue(db, logger)
-	go jobQueue.Run()
 	worker := job.NewWorker(jobQueue, moviestore.NewMovieRepository(db), moviestore.NewReviewRepository(db), client.NewIMDB(), logger)
 	go worker.Run()
 

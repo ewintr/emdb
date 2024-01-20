@@ -1,7 +1,10 @@
 package job
 
 import (
+	"database/sql"
+	"errors"
 	"log/slog"
+	"time"
 
 	"ewintr.nl/emdb/client"
 	"ewintr.nl/emdb/cmd/api-service/moviestore"
@@ -26,16 +29,28 @@ func NewWorker(jq *JobQueue, movieRepo *moviestore.MovieRepository, reviewRepo *
 }
 
 func (w *Worker) Run() {
-	w.logger.Info("starting worker")
-	for j := range w.jq.Next() {
-		w.logger.Info("got a new job", "jobID", j.ID, "movieID", j.MovieID, "action", j.Action)
+	logger := w.logger.With("method", "run")
+	logger.Info("starting worker")
+	for {
+		time.Sleep(interval)
+		j, err := w.jq.Next(TypeSimple)
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			logger.Info("no simple jobs found")
+			continue
+		case err != nil:
+			logger.Error("could not get next job", "error", err)
+			continue
+		}
+
+		logger.Info("got a new job", "jobID", j.ID, "movieID", j.MovieID, "action", j.Action)
 		switch j.Action {
 		case ActionRefreshIMDBReviews:
 			w.RefreshReviews(j.ID, j.MovieID)
 		case ActionRefreshAllIMDBReviews:
 			w.RefreshAllReviews(j.ID)
 		default:
-			w.logger.Warn("unknown job action", "action", j.Action)
+			logger.Error("unknown job action", "action", j.Action)
 		}
 	}
 }

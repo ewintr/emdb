@@ -5,34 +5,44 @@ import (
 	"time"
 )
 
-type JobStatus string
-
-type Action string
+type Status string
+type Type string
 
 const (
 	interval = 20 * time.Second
 
-	ActionRefreshIMDBReviews    Action = "refresh-imdb-reviews"
-	ActionRefreshAllIMDBReviews Action = "refresh-all-imdb-reviews"
+	TypeSimple Type = "simple"
+	TypeAI     Type = "ai"
+
+	ActionRefreshIMDBReviews    = "refresh-imdb-reviews"
+	ActionRefreshAllIMDBReviews = "refresh-all-imdb-reviews"
+	ActionFindTitles            = "find-titles"
+	ActionFindAllTitles         = "find-all-titles"
 )
 
 var (
-	validActions = []Action{
+	simpleActions = []string{
 		ActionRefreshIMDBReviews,
-		ActionRefreshAllIMDBReviews,
+		ActionRefreshAllIMDBReviews, // just creates a job for each movie
+		ActionFindAllTitles,         // just creates a job for each review
 	}
+	aiActions = []string{
+		ActionFindTitles,
+	}
+
+	validActions = append(simpleActions, aiActions...)
 )
 
 type Job struct {
 	ID      int
 	MovieID string
-	Action  Action
-	Status  JobStatus
+	Action  string
+	Status  Status
 	Created time.Time
 	Updated time.Time
 }
 
-func Valid(action Action) bool {
+func Valid(action string) bool {
 	if slices.Contains(validActions, action) {
 		return true
 	}

@@ -3,27 +3,26 @@ package job
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
-	"time"
+	"strings"
 
 	"ewintr.nl/emdb/cmd/api-service/moviestore"
 )
 
 type JobQueue struct {
 	db     *moviestore.SQLite
-	out    chan Job
 	logger *slog.Logger
 }
 
 func NewJobQueue(db *moviestore.SQLite, logger *slog.Logger) *JobQueue {
 	return &JobQueue{
 		db:     db,
-		out:    make(chan Job),
 		logger: logger.With("service", "jobqueue"),
 	}
 }
 
-func (jq *JobQueue) Add(movieID string, action Action) error {
+func (jq *JobQueue) Add(movieID, action string) error {
 	if !Valid(action) {
 		return errors.New("invalid action")
 	}
@@ -34,44 +33,41 @@ func (jq *JobQueue) Add(movieID string, action Action) error {
 	return err
 }
 
-func (jq *JobQueue) Next() chan Job {
-	return jq.out
-}
+func (jq *JobQueue) Next(t Type) (Job, error) {
+	logger := jq.logger.With("method", "next")
 
-func (jq *JobQueue) Run() {
-	logger := jq.logger.With("method", "run")
-	logger.Info("starting job queue")
-	for {
-		time.Sleep(interval)
-		row := jq.db.QueryRow(`
-SELECT id, movie_id, action 
+	actions := simpleActions
+	if t == TypeAI {
+		actions = aiActions
+	}
+	actionsStr := fmt.Sprintf("('%s')", strings.Join(actions, "', '"))
+	query := fmt.Sprintf(`
+SELECT id, movie_id, action
 FROM job_queue
 WHERE status='todo'
+	AND action IN %s
 ORDER BY id ASC
-LIMIT 1`)
-
-		var job Job
-		err := row.Scan(&job.ID, &job.MovieID, &job.Action)
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			logger.Info("nothing to do")
-			continue
-		case err != nil:
-			logger.Error("could not fetch next job", "error", row.Err())
-			continue
+LIMIT 1`, actionsStr)
+	row := jq.db.QueryRow(query)
+	var job Job
+	err := row.Scan(&job.ID, &job.MovieID, &job.Action)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			logger.Error("could not fetch next job", "error", err)
 		}
-		logger.Info("found a job", "id", job.ID)
+		return Job{}, err
+	}
 
-		if _, err := jq.db.Exec(`
+	logger.Info("found a job", "id", job.ID)
+	if _, err := jq.db.Exec(`
 UPDATE job_queue 
 SET status='doing'
 WHERE id=?`, job.ID); err != nil {
-			logger.Error("could not set job to doing", "error")
-			continue
-		}
-
-		jq.out <- job
+		logger.Error("could not set job to doing", "error")
+		return Job{}, err
 	}
+
+	return job, nil
 }
 
 func (jq *JobQueue) MarkDone(id int) {
