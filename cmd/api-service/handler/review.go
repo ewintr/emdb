@@ -35,7 +35,7 @@ func (reviewAPI *ReviewAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reviewAPI.NextUnrated(w, r)
 	case r.Method == http.MethodGet && subPath == "no-titles" && subSubPath == "":
 		reviewAPI.ListNoTitles(w, r)
-	case r.Method == http.MethodGet && subPath != "no-titles" && subSubPath == "next":
+	case r.Method == http.MethodGet && subPath == "no-titles" && subSubPath == "next":
 		reviewAPI.NextNoTitles(w, r)
 	case r.Method == http.MethodGet && subPath != "":
 		reviewAPI.Get(w, r, subPath)
