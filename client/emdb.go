@@ -52,6 +52,34 @@ func (e *EMDB) GetMovies() ([]moviestore.Movie, error) {
 	return movies, nil
 }
 
+func (e *EMDB) GetMovie(id string) (moviestore.Movie, error) {
+	url := fmt.Sprintf("%s/movie/%s", e.baseURL, id)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return moviestore.Movie{}, err
+	}
+	req.Header.Add("Authorization", e.apiKey)
+
+	resp, err := e.c.Do(req)
+	if err != nil {
+		return moviestore.Movie{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return moviestore.Movie{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	var movie moviestore.Movie
+	if err := json.Unmarshal(body, &movie); err != nil {
+		return moviestore.Movie{}, err
+	}
+
+	return movie, nil
+}
+
 func (e *EMDB) CreateMovie(m moviestore.Movie) (moviestore.Movie, error) {
 	body, err := json.Marshal(m)
 	if err != nil {

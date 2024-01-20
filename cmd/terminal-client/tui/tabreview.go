@@ -141,9 +141,9 @@ func (m *tabReview) View() string {
 }
 
 func (m *tabReview) UpdateForm() {
-	mentions := strings.Join(m.selectedReview.Mentions, ",")
+	//mentions := strings.Join(m.selectedReview.Mentions, ",")
 	m.inputQuality.SetValue(fmt.Sprintf("%d", m.selectedReview.Quality))
-	m.inputMentions.SetValue(mentions)
+	//m.inputMentions.SetValue(mentions)
 }
 
 func (m *tabReview) updateFormInputs(msg tea.Msg) tea.Cmd {
@@ -205,10 +205,10 @@ func (m *tabReview) StoreReview() tea.Cmd {
 		if err != nil {
 			return err
 		}
-		mentions := m.inputMentions.Value()
+		//mentions := m.inputMentions.Value()
 
 		m.selectedReview.Quality = quality
-		m.selectedReview.Mentions = strings.Split(mentions, ",")
+		//m.selectedReview.Mentions = strings.Split(mentions, ",")
 
 		if err := m.emdb.UpdateReview(m.selectedReview); err != nil {
 			return err

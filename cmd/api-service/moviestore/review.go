@@ -1,6 +1,8 @@
 package moviestore
 
-import "strings"
+import (
+	"encoding/json"
+)
 
 const (
 	ReviewSourceIMDB = "imdb"
@@ -10,6 +12,13 @@ const (
 
 type ReviewSource string
 
+type Titles struct {
+	Movies  []string `json:"movies"`
+	TVShows []string `json:"tvShows"`
+	Games   []string `json:"games"`
+	Books   []string `json:"books"`
+}
+
 type Review struct {
 	ID          string
 	MovieID     string
@@ -18,7 +27,7 @@ type Review struct {
 	Review      string
 	MovieRating int
 	Quality     int
-	Mentions    []string
+	Titles      Titles
 }
 
 type ReviewRepository struct {
@@ -32,8 +41,12 @@ func NewReviewRepository(db *SQLite) *ReviewRepository {
 }
 
 func (rr *ReviewRepository) Store(r Review) error {
-	if _, err := rr.db.Exec(`REPLACE INTO review (id, movie_id, source, url, review, movie_rating, quality, mentions) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		r.ID, r.MovieID, r.Source, r.URL, r.Review, r.MovieRating, r.Quality, strings.Join(r.Mentions, MentionsSeparator)); err != nil {
+	titles, err := json.Marshal(r.Titles)
+	if err != nil {
+		return err
+	}
+	if _, err := rr.db.Exec(`REPLACE INTO review (id, movie_id, source, url, review, movie_rating, quality, mentioned_titles) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		r.ID, r.MovieID, r.Source, r.URL, r.Review, r.MovieRating, r.Quality, titles); err != nil {
 		return err
 	}
 
@@ -41,39 +54,38 @@ func (rr *ReviewRepository) Store(r Review) error {
 }
 
 func (rr *ReviewRepository) FindOne(id string) (Review, error) {
-	row := rr.db.QueryRow(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentions FROM review WHERE id=?`, id)
+	row := rr.db.QueryRow(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles FROM review WHERE id=?`, id)
 	if row.Err() != nil {
 		return Review{}, row.Err()
 	}
 
 	r := Review{}
-	var mentions string
-	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &mentions); err != nil {
+	var titles string
+	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 		return Review{}, err
 	}
-	r.Mentions = make([]string, 0)
-	if mentions != "" {
-		r.Mentions = strings.Split(mentions, MentionsSeparator)
+	if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+		return Review{}, err
 	}
+
 	return r, nil
 }
 
 func (rr *ReviewRepository) FindByMovieID(movieID string) ([]Review, error) {
-	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentions FROM review WHERE movie_id=?`, movieID)
+	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles FROM review WHERE movie_id=?`, movieID)
 	if err != nil {
 		return nil, err
 	}
 
 	reviews := make([]Review, 0)
-	var mentions string
+	var titles string
 	for rows.Next() {
 		r := Review{}
-		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &mentions); err != nil {
+		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
-		r.Mentions = make([]string, 0)
-		if mentions != "" {
-			r.Mentions = strings.Split(mentions, MentionsSeparator)
+		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+			return []Review{}, err
 		}
 		reviews = append(reviews, r)
 	}
@@ -83,40 +95,38 @@ func (rr *ReviewRepository) FindByMovieID(movieID string) ([]Review, error) {
 }
 
 func (rr *ReviewRepository) FindNextUnrated() (Review, error) {
-	row := rr.db.QueryRow(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentions FROM review WHERE quality=0 LIMIT 1`)
+	row := rr.db.QueryRow(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles FROM review WHERE quality=0 LIMIT 1`)
 	if row.Err() != nil {
 		return Review{}, row.Err()
 	}
 
 	r := Review{}
-	var mentions string
-	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &mentions); err != nil {
+	var titles string
+	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 		return Review{}, err
 	}
-	r.Mentions = make([]string, 0)
-	if mentions != "" {
-		r.Mentions = strings.Split(mentions, MentionsSeparator)
+	if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+		return Review{}, err
 	}
 
 	return r, nil
 }
 
 func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
-	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentions FROM review WHERE quality=0`)
+	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles FROM review WHERE quality=0`)
 	if err != nil {
 		return nil, err
 	}
 
 	reviews := make([]Review, 0)
-	var mentions string
+	var titles string
 	for rows.Next() {
 		r := Review{}
-		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &mentions); err != nil {
+		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
-		r.Mentions = make([]string, 0)
-		if mentions != "" {
-			r.Mentions = strings.Split(mentions, MentionsSeparator)
+		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+			return []Review{}, err
 		}
 		reviews = append(reviews, r)
 	}
@@ -126,21 +136,20 @@ func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
 }
 
 func (rr *ReviewRepository) FindAll() ([]Review, error) {
-	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentions FROM review`)
+	rows, err := rr.db.Query(`SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles FROM review`)
 	if err != nil {
 		return nil, err
 	}
 
 	reviews := make([]Review, 0)
-	var mentions string
+	var titles string
 	for rows.Next() {
 		r := Review{}
-		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &mentions); err != nil {
+		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
-		r.Mentions = make([]string, 0)
-		if mentions != "" {
-			r.Mentions = strings.Split(mentions, MentionsSeparator)
+		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+			return []Review{}, err
 		}
 		reviews = append(reviews, r)
 	}

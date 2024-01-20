@@ -92,6 +92,8 @@ var sqliteMigrations = []sqliteMigration{
 		BEGIN
     	UPDATE job_queue SET updated_at = CURRENT_TIMESTAMP WHERE rowid = old.rowid;
 	END;`,
+	`ALTER TABLE review ADD COLUMN "mentioned_titles" JSON`,
+	`ALTER TABLE review DROP COLUMN "mentions"`,
 }
 
 var (
