@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"ewintr.nl/emdb/cmd/api-service/moviestore"
 )
@@ -16,9 +17,31 @@ type JobQueue struct {
 }
 
 func NewJobQueue(db *moviestore.SQLite, logger *slog.Logger) *JobQueue {
-	return &JobQueue{
+	jq := &JobQueue{
 		db:     db,
 		logger: logger.With("service", "jobqueue"),
+	}
+
+	go jq.Run()
+
+	return jq
+}
+
+func (jq *JobQueue) Run() {
+	logger := jq.logger.With("method", "run")
+	ticker := time.NewTicker(time.Hour)
+	for {
+		select {
+		case <-ticker.C:
+			logger.Info("resetting stuck jobs")
+			if _, err := jq.db.Exec(`
+UPDATE job_queue 
+SET status = 'todo'
+WHERE status = 'doing' 
+	AND strftime('%s', 'now') - strftime('%s', updated_at) > 2*24*60*60;`); err != nil {
+				logger.Error("could not clean up job queue", "error", err)
+			}
+		}
 	}
 }
 
