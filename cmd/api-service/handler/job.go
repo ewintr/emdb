@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -29,12 +32,14 @@ func (jobAPI *JobAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		jobAPI.Add(w, r)
 	case r.Method == http.MethodGet && subPath == "":
 		jobAPI.List(w, r)
+	case r.Method == http.MethodGet && subPath == "next-ai":
+		jobAPI.NextAI(w, r)
 	case r.Method == http.MethodDelete && subPath != "":
 		jobAPI.Delete(w, r, subPath)
 	case r.Method == http.MethodDelete && subPath == "":
 		jobAPI.DeleteAll(w, r)
 	default:
-		Error(w, http.StatusNotFound, "unregistered path", nil, logger)
+		Error(w, http.StatusNotFound, "unregistered path", fmt.Errorf("method %q with subpath %q was not registered in /movie", r.Method, subPath), logger)
 	}
 }
 
@@ -69,6 +74,25 @@ func (jobAPI *JobAPI) List(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewEncoder(w).Encode(jobs); err != nil {
 		Error(w, http.StatusInternalServerError, "could not encode jobs", err, logger)
+		return
+	}
+}
+
+func (jobAPI *JobAPI) NextAI(w http.ResponseWriter, r *http.Request) {
+	logger := jobAPI.logger.With("method", "nextai")
+
+	j, err := jobAPI.jq.Next(job.TypeAI)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		logger.Info("no ai jobs found")
+		w.WriteHeader(http.StatusNoContent)
+	case err != nil:
+		Error(w, http.StatusInternalServerError, "could not get next ai job", err, logger)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(j); err != nil {
+		Error(w, http.StatusInternalServerError, "could not encode job", err, logger)
 		return
 	}
 }
