@@ -33,8 +33,10 @@ func (reviewAPI *ReviewAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reviewAPI.ListUnrated(w, r)
 	case r.Method == http.MethodGet && subPath == "unrated" && subSubPath == "next":
 		reviewAPI.NextUnrated(w, r)
-	case r.Method == http.MethodGet && subPath == "no_titles" && subSubPath == "":
+	case r.Method == http.MethodGet && subPath == "no-titles" && subSubPath == "":
 		reviewAPI.ListNoTitles(w, r)
+	case r.Method == http.MethodGet && subPath != "no-titles" && subSubPath == "next":
+		reviewAPI.NextUnrated(w, r)
 	case r.Method == http.MethodGet && subPath != "":
 		reviewAPI.Get(w, r, subPath)
 	case r.Method == http.MethodPut && subPath != "":
@@ -115,6 +117,21 @@ func (reviewAPI *ReviewAPI) ListNoTitles(w http.ResponseWriter, r *http.Request)
 
 	if err := json.NewEncoder(w).Encode(reviews); err != nil {
 		Error(w, http.StatusInternalServerError, "could not encode reviews", err, logger)
+		return
+	}
+}
+
+func (reviewAPI *ReviewAPI) NextNoTitles(w http.ResponseWriter, r *http.Request) {
+	logger := reviewAPI.logger.With("method", "nextNoTitles")
+
+	review, err := reviewAPI.repo.FindNextNoTitles()
+	if err != nil {
+		Error(w, http.StatusInternalServerError, "could not get review", err, logger)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(review); err != nil {
+		Error(w, http.StatusInternalServerError, "could not encode review", err, logger)
 		return
 	}
 }
