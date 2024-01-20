@@ -130,6 +130,11 @@ func (w *Worker) RefreshReviews(jobID int, movieID string) {
 			w.jq.MarkFailed(jobID)
 			return
 		}
+		if err := w.jq.Add(review.ID, moviestore.ActionFindTitles); err != nil {
+			logger.Error("could not add job", "error", err)
+			w.jq.MarkFailed(jobID)
+			return
+		}
 	}
 
 	logger.Info("refresh reviews", "count", len(reviews))
