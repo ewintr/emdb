@@ -24,7 +24,7 @@ var (
 func main() {
 	flag.Parse()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	logger.Info("starting server", "port", *port, "dbPath", *dbPath, "apiKey", *apiKey)
+	logger.Info("starting server", "port", *port, "dbPath", *dbPath)
 
 	db, err := moviestore.NewSQLite(*dbPath)
 	if err != nil {
