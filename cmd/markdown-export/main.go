@@ -63,7 +63,6 @@ func main() {
 		if enTitle == m.Title {
 			enTitle = ""
 		}
-		rating := float32(m.Rating) / 2
 
 		data := struct {
 			Title     string
@@ -79,7 +78,7 @@ func main() {
 			Year:      m.Year,
 			Directors: strings.Join(m.Directors, ", "),
 			EnTitle:   enTitle,
-			Rating:    fmt.Sprintf("%.1f", rating),
+			Rating:    fmt.Sprintf("%d", m.Rating),
 			Comment:   m.Comment,
 		}
 		if err := tpl.Execute(f, data); err != nil {
