@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"ewintr.nl/emdb/client"
-	"ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 )
 
 type Worker struct {

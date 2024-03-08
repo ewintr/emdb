@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"

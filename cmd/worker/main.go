@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/client"
 	"github.com/tmc/langchaingo/chains"
 	"github.com/tmc/langchaingo/llms/ollama"
 	"github.com/tmc/langchaingo/prompts"

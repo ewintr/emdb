@@ -3,7 +3,7 @@ package tui
 import (
 	"fmt"
 
-	"ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/charmbracelet/bubbles/list"
 )
 

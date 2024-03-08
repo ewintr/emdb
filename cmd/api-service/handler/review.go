@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 )
 
 type ReviewAPI struct {

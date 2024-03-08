@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"ewintr.nl/emdb/client"
-	"ewintr.nl/emdb/cmd/terminal-client/tui"
+	"code.ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/cmd/terminal-client/tui"
 )
 
 func main() {

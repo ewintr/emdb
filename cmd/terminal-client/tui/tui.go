@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"

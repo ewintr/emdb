@@ -9,10 +9,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"ewintr.nl/emdb/client"
-	"ewintr.nl/emdb/cmd/api-service/handler"
-	"ewintr.nl/emdb/cmd/api-service/job"
-	"ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/cmd/api-service/handler"
+	"code.ewintr.nl/emdb/cmd/api-service/job"
+	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 )
 
 var (

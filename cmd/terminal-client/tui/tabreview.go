@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"ewintr.nl/emdb/client"
-	"ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"

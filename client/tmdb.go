@@ -3,7 +3,7 @@ package client
 import (
 	"time"
 
-	"ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
 

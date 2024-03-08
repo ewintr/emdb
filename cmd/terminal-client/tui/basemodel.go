@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/client"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 )

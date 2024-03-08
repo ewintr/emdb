@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
 )

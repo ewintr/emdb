@@ -10,8 +10,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"ewintr.nl/emdb/cmd/api-service/job"
-	"ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/cmd/api-service/job"
+	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/google/uuid"
 )
 

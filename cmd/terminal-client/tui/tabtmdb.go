@@ -3,8 +3,8 @@ package tui
 import (
 	"fmt"
 
-	"ewintr.nl/emdb/client"
-	"ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"

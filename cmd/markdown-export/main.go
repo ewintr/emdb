@@ -7,8 +7,8 @@ import (
 	"strings"
 	"text/template"
 
-	"ewintr.nl/emdb/client"
-	"ewintr.nl/go-kit/slugify"
+	"code.ewintr.nl/emdb/client"
+	"code.ewintr.nl/go-kit/slugify"
 )
 
 const (

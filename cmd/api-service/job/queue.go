@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 )
 
 type JobQueue struct {
