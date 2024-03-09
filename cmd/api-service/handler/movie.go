@@ -26,7 +26,6 @@ func NewMovieAPI(apis APIIndex, repo *moviestore.MovieRepository, jq *job.JobQue
 	return &MovieAPI{
 		apis:   apis,
 		repo:   repo,
-		jq:     jq,
 		logger: logger.With("api", "movie"),
 	}
 }

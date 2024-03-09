@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"code.ewintr.nl/emdb/job"
 )
 
@@ -47,7 +46,7 @@ func (jobAPI *JobAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (jobAPI *JobAPI) Add(w http.ResponseWriter, r *http.Request) {
 	logger := jobAPI.logger.With("method", "add")
 
-	var j moviestore.Job
+	var j job.Job
 	if err := json.NewDecoder(r.Body).Decode(&j); err != nil {
 		Error(w, http.StatusBadRequest, "could not decode job", err, logger)
 		return
@@ -82,7 +81,7 @@ func (jobAPI *JobAPI) List(w http.ResponseWriter, r *http.Request) {
 func (jobAPI *JobAPI) NextAI(w http.ResponseWriter, r *http.Request) {
 	logger := jobAPI.logger.With("method", "nextai")
 
-	j, err := jobAPI.jq.Next(moviestore.TypeAI)
+	j, err := jobAPI.jq.Next(job.TypeAI)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		logger.Info("no ai jobs found")

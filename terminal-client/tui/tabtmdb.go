@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"code.ewintr.nl/emdb/client"
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"code.ewintr.nl/emdb/job"
 	"code.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/list"
@@ -134,7 +133,7 @@ func (m *tabTMDB) ImportMovieCmd(movie Movie) tea.Cmd {
 		if err := m.movieRepo.Store(movie.m); err != nil {
 			return err
 		}
-		if err := m.jobQueue.Add(movie.m.ID, string(moviestore.ActionRefreshIMDBReviews)); err != nil {
+		if err := m.jobQueue.Add(movie.m.ID, string(job.ActionRefreshIMDBReviews)); err != nil {
 			return err
 		}
 

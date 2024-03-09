@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"code.ewintr.nl/emdb/storage"
 )
 
@@ -47,7 +46,7 @@ WHERE status = 'doing'
 }
 
 func (jq *JobQueue) Add(movieID, action string) error {
-	if !moviestore.Valid(action) {
+	if !Valid(action) {
 		return errors.New("invalid action")
 	}
 
@@ -58,12 +57,12 @@ VALUES ($1, $2, 'todo');`, movieID, action)
 	return err
 }
 
-func (jq *JobQueue) Next(t moviestore.JobType) (moviestore.Job, error) {
+func (jq *JobQueue) Next(t JobType) (Job, error) {
 	logger := jq.logger.With("method", "next")
 
-	actions := moviestore.SimpleActions
-	if t == moviestore.TypeAI {
-		actions = moviestore.AIActions
+	actions := SimpleActions
+	if t == TypeAI {
+		actions = AIActions
 	}
 	actionsStr := fmt.Sprintf("('%s')", strings.Join(actions, "', '"))
 	query := fmt.Sprintf(`
@@ -74,13 +73,13 @@ WHERE status='todo'
 ORDER BY id ASC
 LIMIT 1;`, actionsStr)
 	row := jq.db.QueryRow(query)
-	var job moviestore.Job
+	var job Job
 	err := row.Scan(&job.ID, &job.ActionID, &job.Action)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			logger.Error("could not fetch next job", "error", err)
 		}
-		return moviestore.Job{}, err
+		return Job{}, err
 	}
 
 	logger.Info("found a job", "id", job.ID)
@@ -89,7 +88,7 @@ UPDATE job_queue
 SET status='doing'
 WHERE id=$1;`, job.ID); err != nil {
 		logger.Error("could not set job to doing", "error")
-		return moviestore.Job{}, err
+		return Job{}, err
 	}
 
 	return job, nil
@@ -116,7 +115,7 @@ WHERE id=$1;`, id); err != nil {
 	return
 }
 
-func (jq *JobQueue) List() ([]moviestore.Job, error) {
+func (jq *JobQueue) List() ([]Job, error) {
 	rows, err := jq.db.Query(`
 SELECT id, action_id, action, status, created_at, updated_at
 FROM job_queue
@@ -126,9 +125,9 @@ ORDER BY id DESC;`)
 	}
 	defer rows.Close()
 
-	var jobs []moviestore.Job
+	var jobs []Job
 	for rows.Next() {
-		var j moviestore.Job
+		var j Job
 		if err := rows.Scan(&j.ID, &j.ActionID, &j.Action, &j.Status, &j.Created, &j.Updated); err != nil {
 			return nil, err
 		}
