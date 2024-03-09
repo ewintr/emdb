@@ -20,15 +20,17 @@ type Worker struct {
 	movieRepo  *storage.MovieRepository
 	reviewRepo *storage.ReviewRepository
 	imdb       *client.IMDB
+	ollama     *client.Ollama
 	logger     *slog.Logger
 }
 
-func NewWorker(jq *job.JobQueue, movieRepo *storage.MovieRepository, reviewRepo *storage.ReviewRepository, imdb *client.IMDB, logger *slog.Logger) *Worker {
+func NewWorker(jq *job.JobQueue, movieRepo *storage.MovieRepository, reviewRepo *storage.ReviewRepository, imdb *client.IMDB, ollama *client.Ollama, logger *slog.Logger) *Worker {
 	return &Worker{
 		jq:         jq,
 		movieRepo:  movieRepo,
 		reviewRepo: reviewRepo,
 		imdb:       imdb,
+		ollama:     ollama,
 		logger:     logger.With("service", "worker"),
 	}
 }
@@ -57,7 +59,7 @@ func (w *Worker) Run() {
 		case job.ActionRefreshAllIMDBReviews:
 			w.RefreshAllReviews(j.ID)
 		case job.ActionFindTitles:
-			//w.FindTitles(j.ID, j.ActionID)
+			w.FindTitles(j.ID, j.ActionID)
 		case job.ActionFindAllTitles:
 			w.FindAllTitles(j.ID)
 		default:

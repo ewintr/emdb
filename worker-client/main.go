@@ -42,8 +42,9 @@ func main() {
 	movieRepo := storage.NewMovieRepository(dbPostgres)
 	reviewRepo := storage.NewReviewRepository(dbPostgres)
 	jobQueue := job.NewJobQueue(dbPostgres, logger)
+	ollama := client.NewOllama("http://localhost:11434")
 
-	w := worker.NewWorker(jobQueue, movieRepo, reviewRepo, client.NewIMDB(), logger)
+	w := worker.NewWorker(jobQueue, movieRepo, reviewRepo, client.NewIMDB(), ollama, logger)
 
 	go w.Run()
 

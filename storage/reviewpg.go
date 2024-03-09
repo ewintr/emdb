@@ -12,13 +12,6 @@ const (
 
 type ReviewSource string
 
-type Titles struct {
-	Movies  []string `json:"movies"`
-	TVShows []string `json:"tvShows"`
-	Games   []string `json:"games"`
-	Books   []string `json:"books"`
-}
-
 type Review struct {
 	ID          string
 	MovieID     string
@@ -27,7 +20,7 @@ type Review struct {
 	Review      string
 	MovieRating int
 	Quality     int
-	Titles      Titles
+	Titles      []string
 }
 
 type ReviewRepository struct {
