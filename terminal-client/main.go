@@ -19,7 +19,6 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	//emdb := client.NewEMDB(os.Getenv("EMDB_BASE_URL"), os.Getenv("EMDB_API_KEY"))
 	dbHost := os.Getenv("EMDB_DB_HOST")
 	dbName := os.Getenv("EMDB_DB_NAME")
 	dbUser := os.Getenv("EMDB_DB_USER")

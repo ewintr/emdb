@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"code.ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/job"
+	"code.ewintr.nl/emdb/storage"
 	"github.com/tmc/langchaingo/chains"
 	"github.com/tmc/langchaingo/llms/ollama"
 	"github.com/tmc/langchaingo/prompts"
@@ -29,29 +31,42 @@ Just answer with the JSON and nothing else. If you don't see any other movie tit
 )
 
 func main() {
-	emdb := client.NewEMDB(os.Getenv("EMDB_BASE_URL"), os.Getenv("EMDB_API_KEY"))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	dbHost := os.Getenv("EMDB_DB_HOST")
+	dbName := os.Getenv("EMDB_DB_NAME")
+	dbUser := os.Getenv("EMDB_DB_USER")
+	dbPassword := os.Getenv("EMDB_DB_PASSWORD")
+	pgConnStr := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbUser, dbPassword, dbName)
+	dbPostgres, err := storage.NewPostgres(pgConnStr)
+	if err != nil {
+		fmt.Printf("could not create new postgres repo: %s", err.Error())
+		os.Exit(1)
+	}
+	movieRepo := storage.NewMovieRepository(dbPostgres)
+	reviewRepo := storage.NewReviewRepository(dbPostgres)
+	jobQueue := job.NewJobQueue(dbPostgres, logger)
 
-	go Work(emdb)
+	go Work(movieRepo, reviewRepo, jobQueue)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	<-c
 }
 
-func Work(emdb *client.EMDB) {
+func Work(movieRepo *storage.MovieRepository, reviewRepo *storage.ReviewRepository, jobQueue *job.JobQueue) {
 	for {
-		j, err := emdb.GetNextAIJob()
+		j, err := jobQueue.Next()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		review, err := emdb.GetReview(j.ActionID)
+		review, err := reviewRepo.FindOne(j.ActionID)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		movie, err := emdb.GetMovie(review.MovieID)
+		movie, err := movieRepo.FindOne(review.MovieID)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -105,7 +120,7 @@ func Work(emdb *client.EMDB) {
 
 		review.Titles = resp
 
-		if err := emdb.UpdateReview(review); err != nil {
+		if err := reviewRepo.Store(review); err != nil {
 			fmt.Printf("could not update review: %s\n", err)
 			os.Exit(1)
 		}

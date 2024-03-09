@@ -3,9 +3,7 @@ package job
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"code.ewintr.nl/emdb/storage"
@@ -57,22 +55,15 @@ VALUES ($1, $2, 'todo');`, movieID, action)
 	return err
 }
 
-func (jq *JobQueue) Next(t JobType) (Job, error) {
+func (jq *JobQueue) Next() (Job, error) {
 	logger := jq.logger.With("method", "next")
 
-	actions := SimpleActions
-	if t == TypeAI {
-		actions = AIActions
-	}
-	actionsStr := fmt.Sprintf("('%s')", strings.Join(actions, "', '"))
-	query := fmt.Sprintf(`
+	row := jq.db.QueryRow(`
 SELECT id, action_id, action
 FROM job_queue
 WHERE status='todo'
-	AND action = ANY($1)
 ORDER BY id ASC
-LIMIT 1;`, actionsStr)
-	row := jq.db.QueryRow(query)
+LIMIT 1;`)
 	var job Job
 	err := row.Scan(&job.ID, &job.ActionID, &job.Action)
 	if err != nil {

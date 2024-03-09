@@ -33,7 +33,7 @@ func (w *Worker) Run() {
 	logger.Info("starting worker")
 	for {
 		time.Sleep(interval)
-		j, err := w.jq.Next(TypeSimple)
+		j, err := w.jq.Next()
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
 			logger.Info("no simple jobs found")
