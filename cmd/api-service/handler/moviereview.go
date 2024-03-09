@@ -6,15 +6,15 @@ import (
 	"log/slog"
 	"net/http"
 
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/storage"
 )
 
 type MovieReviewAPI struct {
-	repo   *moviestore.ReviewRepository
+	repo   *storage.ReviewRepository
 	logger *slog.Logger
 }
 
-func NewMovieReviewAPI(repo *moviestore.ReviewRepository, logger *slog.Logger) *MovieReviewAPI {
+func NewMovieReviewAPI(repo *storage.ReviewRepository, logger *slog.Logger) *MovieReviewAPI {
 	return &MovieReviewAPI{
 		repo:   repo,
 		logger: logger.With("api", "moviereview"),

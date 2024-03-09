@@ -13,6 +13,7 @@ import (
 	"code.ewintr.nl/emdb/cmd/api-service/handler"
 	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	job2 "code.ewintr.nl/emdb/job"
+	"code.ewintr.nl/emdb/storage"
 )
 
 var (
@@ -33,15 +34,15 @@ func main() {
 	}
 
 	jobQueue := job2.NewJobQueue(db, logger)
-	worker := job2.NewWorker(jobQueue, moviestore.NewMovieRepository(db), moviestore.NewReviewRepository(db), client.NewIMDB(), logger)
+	worker := job2.NewWorker(jobQueue, storage.NewMovieRepository(db), storage.NewReviewRepository(db), client.NewIMDB(), logger)
 	go worker.Run()
 
 	apis := handler.APIIndex{
 		"job": handler.NewJobAPI(jobQueue, logger),
 		"movie": handler.NewMovieAPI(handler.APIIndex{
-			"review": handler.NewMovieReviewAPI(moviestore.NewReviewRepository(db), logger),
-		}, moviestore.NewMovieRepository(db), jobQueue, logger),
-		"review": handler.NewReviewAPI(moviestore.NewReviewRepository(db), logger),
+			"review": handler.NewMovieReviewAPI(storage.NewReviewRepository(db), logger),
+		}, storage.NewMovieRepository(db), jobQueue, logger),
+		"review": handler.NewReviewAPI(storage.NewReviewRepository(db), logger),
 	}
 
 	go http.ListenAndServe(fmt.Sprintf(":%d", *port), handler.NewServer(*apiKey, apis, logger))

@@ -2,47 +2,45 @@ package storage
 
 import (
 	"encoding/json"
-
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 )
 
-//const (
-//	ReviewSourceIMDB = "imdb"
-//
-//	MentionsSeparator = "|"
-//)
-//
-//type ReviewSource string
-//
-//type Titles struct {
-//	Movies  []string `json:"movies"`
-//	TVShows []string `json:"tvShows"`
-//	Games   []string `json:"games"`
-//	Books   []string `json:"books"`
-//}
-//
-//type Review struct {
-//	ID          string
-//	MovieID     string
-//	Source      ReviewSource
-//	URL         string
-//	Review      string
-//	MovieRating int
-//	Quality     int
-//	Titles      Titles
-//}
+const (
+	ReviewSourceIMDB = "imdb"
 
-type ReviewRepositoryPG struct {
+	MentionsSeparator = "|"
+)
+
+type ReviewSource string
+
+type Titles struct {
+	Movies  []string `json:"movies"`
+	TVShows []string `json:"tvShows"`
+	Games   []string `json:"games"`
+	Books   []string `json:"books"`
+}
+
+type Review struct {
+	ID          string
+	MovieID     string
+	Source      ReviewSource
+	URL         string
+	Review      string
+	MovieRating int
+	Quality     int
+	Titles      Titles
+}
+
+type ReviewRepository struct {
 	db *Postgres
 }
 
-func NewReviewRepositoryPG(db *Postgres) *ReviewRepositoryPG {
-	return &ReviewRepositoryPG{
+func NewReviewRepository(db *Postgres) *ReviewRepository {
+	return &ReviewRepository{
 		db: db,
 	}
 }
 
-func (rr *ReviewRepositoryPG) Store(r moviestore.Review) error {
+func (rr *ReviewRepository) Store(r Review) error {
 	titles, err := json.Marshal(r.Titles)
 	if err != nil {
 		return err
@@ -59,28 +57,28 @@ mentioned_titles = EXCLUDED.mentioned_titles;`,
 	return nil
 }
 
-func (rr *ReviewRepositoryPG) FindOne(id string) (moviestore.Review, error) {
+func (rr *ReviewRepository) FindOne(id string) (Review, error) {
 	row := rr.db.QueryRow(`
 SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles 
 FROM review 
 WHERE id=$1`, id)
 	if row.Err() != nil {
-		return moviestore.Review{}, row.Err()
+		return Review{}, row.Err()
 	}
 
-	r := moviestore.Review{}
+	r := Review{}
 	var titles string
 	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
-		return moviestore.Review{}, err
+		return Review{}, err
 	}
 	if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
-		return moviestore.Review{}, err
+		return Review{}, err
 	}
 
 	return r, nil
 }
 
-func (rr *ReviewRepositoryPG) FindByMovieID(movieID string) ([]moviestore.Review, error) {
+func (rr *ReviewRepository) FindByMovieID(movieID string) ([]Review, error) {
 	rows, err := rr.db.Query(`
 SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles 
 FROM review 
@@ -89,15 +87,15 @@ WHERE movie_id=$1`, movieID)
 		return nil, err
 	}
 
-	reviews := make([]moviestore.Review, 0)
+	reviews := make([]Review, 0)
 	var titles string
 	for rows.Next() {
-		r := moviestore.Review{}
+		r := Review{}
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
-			return []moviestore.Review{}, err
+			return []Review{}, err
 		}
 		reviews = append(reviews, r)
 	}
@@ -106,29 +104,29 @@ WHERE movie_id=$1`, movieID)
 	return reviews, nil
 }
 
-func (rr *ReviewRepositoryPG) FindNextUnrated() (moviestore.Review, error) {
+func (rr *ReviewRepository) FindNextUnrated() (Review, error) {
 	row := rr.db.QueryRow(`
 SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles 
 FROM review 
 WHERE quality=0 
 LIMIT 1`)
 	if row.Err() != nil {
-		return moviestore.Review{}, row.Err()
+		return Review{}, row.Err()
 	}
 
-	r := moviestore.Review{}
+	r := Review{}
 	var titles string
 	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
-		return moviestore.Review{}, err
+		return Review{}, err
 	}
 	if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
-		return moviestore.Review{}, err
+		return Review{}, err
 	}
 
 	return r, nil
 }
 
-func (rr *ReviewRepositoryPG) FindUnrated() ([]moviestore.Review, error) {
+func (rr *ReviewRepository) FindUnrated() ([]Review, error) {
 	rows, err := rr.db.Query(`
 SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles 
 FROM review 
@@ -137,15 +135,15 @@ WHERE quality=0`)
 		return nil, err
 	}
 
-	reviews := make([]moviestore.Review, 0)
+	reviews := make([]Review, 0)
 	var titles string
 	for rows.Next() {
-		r := moviestore.Review{}
+		r := Review{}
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
-			return []moviestore.Review{}, err
+			return []Review{}, err
 		}
 		reviews = append(reviews, r)
 	}
@@ -154,29 +152,29 @@ WHERE quality=0`)
 	return reviews, nil
 }
 
-func (rr *ReviewRepositoryPG) FindNextNoTitles() (moviestore.Review, error) {
+func (rr *ReviewRepository) FindNextNoTitles() (Review, error) {
 	row := rr.db.QueryRow(`
 SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles 
 FROM review 
 WHERE mentioned_titles='{}' 
 LIMIT 1`)
 	if row.Err() != nil {
-		return moviestore.Review{}, row.Err()
+		return Review{}, row.Err()
 	}
 
-	r := moviestore.Review{}
+	r := Review{}
 	var titles string
 	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
-		return moviestore.Review{}, err
+		return Review{}, err
 	}
 	if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
-		return moviestore.Review{}, err
+		return Review{}, err
 	}
 
 	return r, nil
 }
 
-func (rr *ReviewRepositoryPG) FindNoTitles() ([]moviestore.Review, error) {
+func (rr *ReviewRepository) FindNoTitles() ([]Review, error) {
 	rows, err := rr.db.Query(`
 SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles 
 FROM review 
@@ -185,15 +183,15 @@ WHERE mentioned_titles='{}'`)
 		return nil, err
 	}
 
-	reviews := make([]moviestore.Review, 0)
+	reviews := make([]Review, 0)
 	var titles string
 	for rows.Next() {
-		r := moviestore.Review{}
+		r := Review{}
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
-			return []moviestore.Review{}, err
+			return []Review{}, err
 		}
 		reviews = append(reviews, r)
 	}
@@ -202,7 +200,7 @@ WHERE mentioned_titles='{}'`)
 	return reviews, nil
 }
 
-func (rr *ReviewRepositoryPG) FindAll() ([]moviestore.Review, error) {
+func (rr *ReviewRepository) FindAll() ([]Review, error) {
 	rows, err := rr.db.Query(`
 SELECT id, movie_id, source, url, review, movie_rating, quality, mentioned_titles 
 FROM review`)
@@ -210,15 +208,15 @@ FROM review`)
 		return nil, err
 	}
 
-	reviews := make([]moviestore.Review, 0)
+	reviews := make([]Review, 0)
 	var titles string
 	for rows.Next() {
-		r := moviestore.Review{}
+		r := Review{}
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
-			return []moviestore.Review{}, err
+			return []Review{}, err
 		}
 		reviews = append(reviews, r)
 	}
@@ -227,7 +225,7 @@ FROM review`)
 	return reviews, nil
 }
 
-func (rr *ReviewRepositoryPG) DeleteByMovieID(id string) error {
+func (rr *ReviewRepository) DeleteByMovieID(id string) error {
 	if _, err := rr.db.Exec(`DELETE FROM review WHERE movie_id=$1`, id); err != nil {
 		return err
 	}

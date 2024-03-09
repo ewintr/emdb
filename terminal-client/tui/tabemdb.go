@@ -24,7 +24,7 @@ type StoredMovie struct{}
 
 type tabEMDB struct {
 	initialized    bool
-	movieRepo      *storage.MovieRepositoryPG
+	movieRepo      *storage.MovieRepository
 	mode           string
 	focused        string
 	colWidth       int
@@ -38,7 +38,7 @@ type tabEMDB struct {
 	logger         *Logger
 }
 
-func NewTabEMDB(movieRepo *storage.MovieRepositoryPG, logger *Logger) (tea.Model, tea.Cmd) {
+func NewTabEMDB(movieRepo *storage.MovieRepository, logger *Logger) (tea.Model, tea.Cmd) {
 	del := list.NewDefaultDelegate()
 	list := list.New([]list.Item{}, del, 0, 0)
 	list.Title = "Movies"
@@ -276,7 +276,7 @@ func (m *tabEMDB) Log(s string) {
 	m.logger.Log(s)
 }
 
-func FetchMovieList(movieRepo *storage.MovieRepositoryPG) tea.Cmd {
+func FetchMovieList(movieRepo *storage.MovieRepository) tea.Cmd {
 	return func() tea.Msg {
 		ems, err := movieRepo.FindAll()
 		if err != nil {

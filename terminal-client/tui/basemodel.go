@@ -12,8 +12,8 @@ import (
 )
 
 type baseModel struct {
-	movieRepo   *storage.MovieRepositoryPG
-	reviewRepo  *storage.ReviewRepositoryPG
+	movieRepo   *storage.MovieRepository
+	reviewRepo  *storage.ReviewRepository
 	jobQueue    *job.JobQueue
 	tmdb        *client.TMDB
 	tabs        *TabSet
@@ -24,7 +24,7 @@ type baseModel struct {
 	contentSize tea.WindowSizeMsg
 }
 
-func NewBaseModel(movieRepo *storage.MovieRepositoryPG, reviewRepo *storage.ReviewRepositoryPG, jobQueue *job.JobQueue, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
+func NewBaseModel(movieRepo *storage.MovieRepository, reviewRepo *storage.ReviewRepository, jobQueue *job.JobQueue, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	logViewport := viewport.New(0, 0)
 	logViewport.KeyMap = viewport.KeyMap{}
 

@@ -6,15 +6,15 @@ import (
 	"log/slog"
 	"net/http"
 
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/storage"
 )
 
 type ReviewAPI struct {
-	repo   *moviestore.ReviewRepository
+	repo   *storage.ReviewRepository
 	logger *slog.Logger
 }
 
-func NewReviewAPI(repo *moviestore.ReviewRepository, logger *slog.Logger) *ReviewAPI {
+func NewReviewAPI(repo *storage.ReviewRepository, logger *slog.Logger) *ReviewAPI {
 	return &ReviewAPI{
 		repo:   repo,
 		logger: logger.With("api", "review"),
@@ -139,7 +139,7 @@ func (reviewAPI *ReviewAPI) NextNoTitles(w http.ResponseWriter, r *http.Request)
 func (reviewAPI *ReviewAPI) Store(w http.ResponseWriter, r *http.Request, id string) {
 	logger := reviewAPI.logger.With("method", "store")
 
-	var review moviestore.Review
+	var review storage.Review
 	if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
 		Error(w, http.StatusBadRequest, "could not decode review", err, logger)
 		return

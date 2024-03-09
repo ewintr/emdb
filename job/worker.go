@@ -7,18 +7,18 @@ import (
 	"time"
 
 	"code.ewintr.nl/emdb/client"
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/storage"
 )
 
 type Worker struct {
 	jq         *JobQueue
-	movieRepo  *moviestore.MovieRepository
-	reviewRepo *moviestore.ReviewRepository
+	movieRepo  *storage.MovieRepository
+	reviewRepo *storage.ReviewRepository
 	imdb       *client.IMDB
 	logger     *slog.Logger
 }
 
-func NewWorker(jq *JobQueue, movieRepo *moviestore.MovieRepository, reviewRepo *moviestore.ReviewRepository, imdb *client.IMDB, logger *slog.Logger) *Worker {
+func NewWorker(jq *JobQueue, movieRepo *storage.MovieRepository, reviewRepo *storage.ReviewRepository, imdb *client.IMDB, logger *slog.Logger) *Worker {
 	return &Worker{
 		jq:         jq,
 		movieRepo:  movieRepo,

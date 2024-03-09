@@ -10,19 +10,19 @@ import (
 	"log/slog"
 	"net/http"
 
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"code.ewintr.nl/emdb/job"
+	"code.ewintr.nl/emdb/storage"
 	"github.com/google/uuid"
 )
 
 type MovieAPI struct {
 	apis   APIIndex
-	repo   *moviestore.MovieRepository
+	repo   *storage.MovieRepository
 	jq     *job.JobQueue
 	logger *slog.Logger
 }
 
-func NewMovieAPI(apis APIIndex, repo *moviestore.MovieRepository, jq *job.JobQueue, logger *slog.Logger) *MovieAPI {
+func NewMovieAPI(apis APIIndex, repo *storage.MovieRepository, jq *job.JobQueue, logger *slog.Logger) *MovieAPI {
 	return &MovieAPI{
 		apis:   apis,
 		repo:   repo,
@@ -93,7 +93,7 @@ func (movieAPI *MovieAPI) Store(w http.ResponseWriter, r *http.Request, urlID st
 	}
 	defer r.Body.Close()
 
-	var m moviestore.Movie
+	var m storage.Movie
 	if err := json.Unmarshal(body, &m); err != nil {
 		Error(w, http.StatusBadRequest, "could not unmarshal request body", err, logger)
 		return

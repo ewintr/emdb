@@ -3,7 +3,7 @@ package client
 import (
 	"time"
 
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/storage"
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
@@ -24,13 +24,13 @@ func NewTMDB(apikey string) (*TMDB, error) {
 	}, nil
 }
 
-func (t TMDB) Search(query string) ([]moviestore.Movie, error) {
+func (t TMDB) Search(query string) ([]storage.Movie, error) {
 	results, err := t.c.GetSearchMovies(query, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	movies := make([]moviestore.Movie, len(results.Results))
+	movies := make([]storage.Movie, len(results.Results))
 	for i, result := range results.Results {
 		movies[i], err = t.GetMovie(result.ID)
 		if err != nil {
@@ -41,12 +41,12 @@ func (t TMDB) Search(query string) ([]moviestore.Movie, error) {
 	return movies, nil
 }
 
-func (t TMDB) GetMovie(id int64) (moviestore.Movie, error) {
+func (t TMDB) GetMovie(id int64) (storage.Movie, error) {
 	result, err := t.c.GetMovieDetails(int(id), map[string]string{
 		"append_to_response": "credits",
 	})
 	if err != nil {
-		return moviestore.Movie{}, err
+		return storage.Movie{}, err
 	}
 
 	var year int
@@ -61,7 +61,7 @@ func (t TMDB) GetMovie(id int64) (moviestore.Movie, error) {
 		}
 	}
 
-	return moviestore.Movie{
+	return storage.Movie{
 		Title:        result.OriginalTitle,
 		EnglishTitle: result.Title,
 		TMDBID:       result.ID,

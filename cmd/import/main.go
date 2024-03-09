@@ -38,8 +38,8 @@ func main() {
 	//	}
 	//}
 	fmt.Println("reviews")
-	reviewRepoSqlite := moviestore.NewReviewRepository(dbSQLite)
-	reviewRepoPG := storage.NewReviewRepositoryPG(dbPostgres)
+	reviewRepoSqlite := storage.NewReviewRepository(dbSQLite)
+	reviewRepoPG := storage.NewReviewRepository(dbPostgres)
 
 	reviews, err := reviewRepoSqlite.FindAll()
 	if err != nil {

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/storage"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
 )
@@ -19,7 +19,7 @@ func NewIMDB() *IMDB {
 	return &IMDB{}
 }
 
-func (i *IMDB) GetReviews(m moviestore.Movie) ([]moviestore.Review, error) {
+func (i *IMDB) GetReviews(m storage.Movie) ([]storage.Review, error) {
 	url := fmt.Sprintf("https://www.imdb.com/title/%s/reviews", m.IMDBID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -40,7 +40,7 @@ func (i *IMDB) GetReviews(m moviestore.Movie) ([]moviestore.Review, error) {
 	}
 	defer res.Body.Close()
 
-	reviews := make([]moviestore.Review, 0)
+	reviews := make([]storage.Review, 0)
 	doc.Find(".lister-item-content").Each(func(i int, reviewNode *goquery.Selection) {
 
 		var permaLink string
@@ -58,10 +58,10 @@ func (i *IMDB) GetReviews(m moviestore.Movie) ([]moviestore.Review, error) {
 		}
 
 		rat, rev := ScrubIMDBReview(reviewNode.Text())
-		reviews = append(reviews, moviestore.Review{
+		reviews = append(reviews, storage.Review{
 			ID:          uuid.New().String(),
 			MovieID:     m.ID,
-			Source:      moviestore.ReviewSourceIMDB,
+			Source:      storage.ReviewSourceIMDB,
 			URL:         fmt.Sprintf("https://www.imdb.com%s", permaLink),
 			Review:      rev,
 			MovieRating: rat,

@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"code.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -16,11 +15,11 @@ import (
 
 type tabReview struct {
 	initialized    bool
-	reviewRepo     *storage.ReviewRepositoryPG
+	reviewRepo     *storage.ReviewRepository
 	width          int
 	height         int
 	mode           string
-	selectedReview moviestore.Review
+	selectedReview storage.Review
 	reviewViewport viewport.Model
 	inputQuality   textinput.Model
 	inputMentions  textarea.Model
@@ -28,7 +27,7 @@ type tabReview struct {
 	logger         *Logger
 }
 
-func NewTabReview(reviewRepo *storage.ReviewRepositoryPG, logger *Logger) (tea.Model, tea.Cmd) {
+func NewTabReview(reviewRepo *storage.ReviewRepository, logger *Logger) (tea.Model, tea.Cmd) {
 	reviewViewport := viewport.New(0, 0)
 	//reviewViewport.KeyMap = viewport.KeyMap{}
 
@@ -104,7 +103,7 @@ func (m *tabReview) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 		}
-	case moviestore.Review:
+	case storage.Review:
 		m.logger.Log(fmt.Sprintf("got review %s", msg.ID))
 		m.selectedReview = msg
 		review := strings.ReplaceAll(m.selectedReview.Review, "\n", "\n\n")
@@ -218,7 +217,7 @@ func (m *tabReview) StoreReview() tea.Cmd {
 	}
 }
 
-func FetchNextUnratedReview(reviewRepo *storage.ReviewRepositoryPG) tea.Cmd {
+func FetchNextUnratedReview(reviewRepo *storage.ReviewRepository) tea.Cmd {
 	return func() tea.Msg {
 		review, err := reviewRepo.FindNextUnrated()
 		if err != nil {

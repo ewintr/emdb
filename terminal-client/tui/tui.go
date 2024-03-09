@@ -52,7 +52,7 @@ func SelectPrevTab() tea.Cmd {
 	}
 }
 
-func New(movieRepo *storage.MovieRepositoryPG, reviewRepo *storage.ReviewRepositoryPG, jobQueue *job.JobQueue, tmdb *client.TMDB, logger *Logger) (*tea.Program, error) {
+func New(movieRepo *storage.MovieRepository, reviewRepo *storage.ReviewRepository, jobQueue *job.JobQueue, tmdb *client.TMDB, logger *Logger) (*tea.Program, error) {
 	logViewport := viewport.New(0, 0)
 	logViewport.KeyMap = viewport.KeyMap{}
 

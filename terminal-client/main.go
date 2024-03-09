@@ -30,8 +30,8 @@ func main() {
 		fmt.Printf("could not create new postgres repo: %s", err.Error())
 		os.Exit(1)
 	}
-	movieRepo := storage.NewMovieRepositoryPG(dbPostgres)
-	reviewRepo := storage.NewReviewRepositoryPG(dbPostgres)
+	movieRepo := storage.NewMovieRepository(dbPostgres)
+	reviewRepo := storage.NewReviewRepository(dbPostgres)
 	jobQueue := job.NewJobQueue(dbPostgres, logger)
 
 	p, err := tui.New(movieRepo, reviewRepo, jobQueue, tmdb, tuiLogger)

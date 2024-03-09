@@ -12,7 +12,7 @@ import (
 )
 
 type tabTMDB struct {
-	movieRepo     *storage.MovieRepositoryPG
+	movieRepo     *storage.MovieRepository
 	jobQueue      *job.JobQueue
 	tmdb          *client.TMDB
 	initialized   bool
@@ -22,7 +22,7 @@ type tabTMDB struct {
 	logger        *Logger
 }
 
-func NewTabTMDB(movieRepo *storage.MovieRepositoryPG, jobQueue *job.JobQueue, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
+func NewTabTMDB(movieRepo *storage.MovieRepository, jobQueue *job.JobQueue, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	m := tabTMDB{
 		movieRepo: movieRepo,
 		jobQueue:  jobQueue,
