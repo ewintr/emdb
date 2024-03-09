@@ -8,8 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"code.ewintr.nl/emdb/cmd/api-service/job"
 	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/job"
 )
 
 type JobAPI struct {

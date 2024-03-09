@@ -2,6 +2,8 @@ package tui
 
 import (
 	"code.ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/job"
+	"code.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -50,11 +52,11 @@ func SelectPrevTab() tea.Cmd {
 	}
 }
 
-func New(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (*tea.Program, error) {
+func New(movieRepo *storage.MovieRepositoryPG, reviewRepo *storage.ReviewRepositoryPG, jobQueue *job.JobQueue, tmdb *client.TMDB, logger *Logger) (*tea.Program, error) {
 	logViewport := viewport.New(0, 0)
 	logViewport.KeyMap = viewport.KeyMap{}
 
-	m, _ := NewBaseModel(emdb, tmdb, logger)
+	m, _ := NewBaseModel(movieRepo, reviewRepo, jobQueue, tmdb, logger)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 
 	return p, nil

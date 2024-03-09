@@ -10,6 +10,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.10.0
 	github.com/cyruzin/golang-tmdb v1.6.0
 	github.com/google/uuid v1.6.0
+	github.com/lib/pq v1.10.9
 	github.com/muesli/termenv v0.15.2
 	github.com/tmc/langchaingo v0.1.5
 	modernc.org/sqlite v1.29.3

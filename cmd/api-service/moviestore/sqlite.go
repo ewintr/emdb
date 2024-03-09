@@ -135,9 +135,9 @@ func NewSQLite(dbPath string) (*SQLite, error) {
 		db: db,
 	}
 
-	if err := s.migrate(sqliteMigrations); err != nil {
-		return &SQLite{}, err
-	}
+	//if err := s.migrate(sqliteMigrations); err != nil {
+	//	return &SQLite{}, err
+	//}
 
 	return s, nil
 }
@@ -154,71 +154,71 @@ func (s *SQLite) Query(query string, args ...any) (*sql.Rows, error) {
 	return s.db.Query(query, args...)
 }
 
-func (s *SQLite) migrate(wanted []sqliteMigration) error {
-	// admin table
-	if _, err := s.db.Exec(`
-CREATE TABLE IF NOT EXISTS migration
-("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "query" TEXT)
-`); err != nil {
-		return err
-	}
-
-	// find existing
-	rows, err := s.db.Query(`SELECT query FROM migration ORDER BY id`)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-	}
-
-	existing := []sqliteMigration{}
-	for rows.Next() {
-		var query string
-		if err := rows.Scan(&query); err != nil {
-			return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-		}
-		existing = append(existing, sqliteMigration(query))
-	}
-	rows.Close()
-
-	// compare
-	missing, err := compareMigrations(wanted, existing)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-	}
-
-	// execute missing
-	for _, query := range missing {
-		if _, err := s.db.Exec(string(query)); err != nil {
-			return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-		}
-
-		// register
-		if _, err := s.db.Exec(`
-INSERT INTO migration
-(query) VALUES (?)
-`, query); err != nil {
-			return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
-		}
-	}
-
-	return nil
-}
-
-func compareMigrations(wanted, existing []sqliteMigration) ([]sqliteMigration, error) {
-	needed := []sqliteMigration{}
-	if len(wanted) < len(existing) {
-		return []sqliteMigration{}, ErrNotEnoughSQLMigrations
-	}
-
-	for i, want := range wanted {
-		switch {
-		case i >= len(existing):
-			needed = append(needed, want)
-		case want == existing[i]:
-			// do nothing
-		case want != existing[i]:
-			return []sqliteMigration{}, fmt.Errorf("%w: %v", ErrIncompatibleSQLMigration, want)
-		}
-	}
-
-	return needed, nil
-}
+//func (s *SQLite) migrate(wanted []sqliteMigration) error {
+//	// admin table
+//	if _, err := s.db.Exec(`
+//CREATE TABLE IF NOT EXISTS migration
+//("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "query" TEXT)
+//`); err != nil {
+//		return err
+//	}
+//
+//	// find existing
+//	rows, err := s.db.Query(`SELECT query FROM migration ORDER BY id`)
+//	if err != nil {
+//		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+//	}
+//
+//	existing := []sqliteMigration{}
+//	for rows.Next() {
+//		var query string
+//		if err := rows.Scan(&query); err != nil {
+//			return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+//		}
+//		existing = append(existing, sqliteMigration(query))
+//	}
+//	rows.Close()
+//
+//	// compare
+//	missing, err := compareMigrations(wanted, existing)
+//	if err != nil {
+//		return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+//	}
+//
+//	// execute missing
+//	for _, query := range missing {
+//		if _, err := s.db.Exec(string(query)); err != nil {
+//			return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+//		}
+//
+//		// register
+//		if _, err := s.db.Exec(`
+//INSERT INTO migration
+//(query) VALUES (?)
+//`, query); err != nil {
+//			return fmt.Errorf("%w: %v", ErrSqliteFailure, err)
+//		}
+//	}
+//
+//	return nil
+//}
+//
+//func compareMigrations(wanted, existing []sqliteMigration) ([]sqliteMigration, error) {
+//	needed := []sqliteMigration{}
+//	if len(wanted) < len(existing) {
+//		return []sqliteMigration{}, ErrNotEnoughSQLMigrations
+//	}
+//
+//	for i, want := range wanted {
+//		switch {
+//		case i >= len(existing):
+//			needed = append(needed, want)
+//		case want == existing[i]:
+//			// do nothing
+//		case want != existing[i]:
+//			return []sqliteMigration{}, fmt.Errorf("%w: %v", ErrIncompatibleSQLMigration, want)
+//		}
+//	}
+//
+//	return needed, nil
+//}

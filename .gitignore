@@ -4,3 +4,5 @@
 emdb
 emdb-api
 public
+*.sql
+*.sql.bak

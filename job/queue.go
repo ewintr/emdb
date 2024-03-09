@@ -9,14 +9,15 @@ import (
 	"time"
 
 	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/storage"
 )
 
 type JobQueue struct {
-	db     *moviestore.SQLite
+	db     *storage.Postgres
 	logger *slog.Logger
 }
 
-func NewJobQueue(db *moviestore.SQLite, logger *slog.Logger) *JobQueue {
+func NewJobQueue(db *storage.Postgres, logger *slog.Logger) *JobQueue {
 	jq := &JobQueue{
 		db:     db,
 		logger: logger.With("service", "jobqueue"),
@@ -38,7 +39,7 @@ func (jq *JobQueue) Run() {
 UPDATE job_queue 
 SET status = 'todo'
 WHERE status = 'doing' 
-	AND strftime('%s', 'now') - strftime('%s', updated_at) > 2*24*60*60;`); err != nil {
+	AND EXTRACT(EPOCH FROM now() - updated_at) > 2*24*60*60;`); err != nil {
 				logger.Error("could not clean up job queue", "error", err)
 			}
 		}
@@ -50,8 +51,9 @@ func (jq *JobQueue) Add(movieID, action string) error {
 		return errors.New("invalid action")
 	}
 
-	_, err := jq.db.Exec(`INSERT INTO job_queue (action_id, action, status) 
-	VALUES (?, ?, 'todo')`, movieID, action)
+	_, err := jq.db.Exec(`
+INSERT INTO job_queue (action_id, action, status) 
+VALUES ($1, $2, 'todo');`, movieID, action)
 
 	return err
 }
@@ -68,9 +70,9 @@ func (jq *JobQueue) Next(t moviestore.JobType) (moviestore.Job, error) {
 SELECT id, action_id, action
 FROM job_queue
 WHERE status='todo'
-	AND action IN %s
+	AND action = ANY($1)
 ORDER BY id ASC
-LIMIT 1`, actionsStr)
+LIMIT 1;`, actionsStr)
 	row := jq.db.QueryRow(query)
 	var job moviestore.Job
 	err := row.Scan(&job.ID, &job.ActionID, &job.Action)
@@ -85,7 +87,7 @@ LIMIT 1`, actionsStr)
 	if _, err := jq.db.Exec(`
 UPDATE job_queue 
 SET status='doing'
-WHERE id=?`, job.ID); err != nil {
+WHERE id=$1;`, job.ID); err != nil {
 		logger.Error("could not set job to doing", "error")
 		return moviestore.Job{}, err
 	}
@@ -97,7 +99,7 @@ func (jq *JobQueue) MarkDone(id int) {
 	logger := jq.logger.With("method", "markdone")
 	if _, err := jq.db.Exec(`
 DELETE FROM job_queue
-WHERE id=?`, id); err != nil {
+WHERE id=$1;`, id); err != nil {
 		logger.Error("could not mark job done", "error", err)
 	}
 	return
@@ -108,7 +110,7 @@ func (jq *JobQueue) MarkFailed(id int) {
 	if _, err := jq.db.Exec(`
 UPDATE job_queue
 SET status='failed'
-WHERE id=?`, id); err != nil {
+WHERE id=$1;`, id); err != nil {
 		logger.Error("could not mark job failed", "error", err)
 	}
 	return
@@ -118,7 +120,7 @@ func (jq *JobQueue) List() ([]moviestore.Job, error) {
 	rows, err := jq.db.Query(`
 SELECT id, action_id, action, status, created_at, updated_at
 FROM job_queue
-ORDER BY id DESC`)
+ORDER BY id DESC;`)
 	if err != nil {
 		return nil, err
 	}
@@ -138,15 +140,14 @@ ORDER BY id DESC`)
 func (jq *JobQueue) Delete(id string) error {
 	if _, err := jq.db.Exec(`
 DELETE FROM job_queue
-WHERE id=?`, id); err != nil {
+WHERE id=$1;`, id); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (jq *JobQueue) DeleteAll() error {
-	if _, err := jq.db.Exec(`
-DELETE FROM job_queue`); err != nil {
+	if _, err := jq.db.Exec(`DELETE FROM job_queue;`); err != nil {
 		return err
 	}
 	return nil

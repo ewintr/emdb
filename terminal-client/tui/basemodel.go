@@ -5,12 +5,16 @@ import (
 	"strings"
 
 	"code.ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/job"
+	"code.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type baseModel struct {
-	emdb        *client.EMDB
+	movieRepo   *storage.MovieRepositoryPG
+	reviewRepo  *storage.ReviewRepositoryPG
+	jobQueue    *job.JobQueue
 	tmdb        *client.TMDB
 	tabs        *TabSet
 	initialized bool
@@ -20,12 +24,14 @@ type baseModel struct {
 	contentSize tea.WindowSizeMsg
 }
 
-func NewBaseModel(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
+func NewBaseModel(movieRepo *storage.MovieRepositoryPG, reviewRepo *storage.ReviewRepositoryPG, jobQueue *job.JobQueue, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	logViewport := viewport.New(0, 0)
 	logViewport.KeyMap = viewport.KeyMap{}
 
 	m := baseModel{
-		emdb:        emdb,
+		movieRepo:   movieRepo,
+		reviewRepo:  reviewRepo,
+		jobQueue:    jobQueue,
 		tmdb:        tmdb,
 		tabs:        NewTabSet(),
 		logViewport: logViewport,
@@ -53,11 +59,11 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.windowSize = msg
 		if !m.initialized {
 			var emdbTab, tmdbTab tea.Model
-			emdbTab, cmd = NewTabEMDB(m.emdb, m.logger)
+			emdbTab, cmd = NewTabEMDB(m.movieRepo, m.logger)
 			cmds = append(cmds, cmd)
-			tmdbTab, cmd = NewTabTMDB(m.emdb, m.tmdb, m.logger)
+			tmdbTab, cmd = NewTabTMDB(m.movieRepo, m.jobQueue, m.tmdb, m.logger)
 			cmds = append(cmds, cmd)
-			reviewTab, cmd := NewTabReview(m.emdb, m.logger)
+			reviewTab, cmd := NewTabReview(m.reviewRepo, m.logger)
 			cmds = append(cmds, cmd)
 			m.tabs.AddTab("emdb", "Watched movies", emdbTab)
 			m.tabs.AddTab("review", "Review", reviewTab)
@@ -74,7 +80,7 @@ func (m baseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case NewMovie:
 		m.Log(fmt.Sprintf("imported movie %s", msg.m.Title))
 		m.tabs.Select("emdb")
-		cmds = append(cmds, FetchMovieList(m.emdb))
+		cmds = append(cmds, FetchMovieList(m.movieRepo))
 	case error:
 		m.Log(fmt.Sprintf("ERROR: %s", msg.Error()))
 	default:

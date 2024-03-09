@@ -11,8 +11,8 @@ import (
 
 	"code.ewintr.nl/emdb/client"
 	"code.ewintr.nl/emdb/cmd/api-service/handler"
-	"code.ewintr.nl/emdb/cmd/api-service/job"
 	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
+	job2 "code.ewintr.nl/emdb/job"
 )
 
 var (
@@ -32,8 +32,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	jobQueue := job.NewJobQueue(db, logger)
-	worker := job.NewWorker(jobQueue, moviestore.NewMovieRepository(db), moviestore.NewReviewRepository(db), client.NewIMDB(), logger)
+	jobQueue := job2.NewJobQueue(db, logger)
+	worker := job2.NewWorker(jobQueue, moviestore.NewMovieRepository(db), moviestore.NewReviewRepository(db), client.NewIMDB(), logger)
 	go worker.Run()
 
 	apis := handler.APIIndex{

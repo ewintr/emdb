@@ -5,13 +5,16 @@ import (
 
 	"code.ewintr.nl/emdb/client"
 	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/job"
+	"code.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type tabTMDB struct {
-	emdb          *client.EMDB
+	movieRepo     *storage.MovieRepositoryPG
+	jobQueue      *job.JobQueue
 	tmdb          *client.TMDB
 	initialized   bool
 	focused       string
@@ -20,11 +23,12 @@ type tabTMDB struct {
 	logger        *Logger
 }
 
-func NewTabTMDB(emdb *client.EMDB, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
+func NewTabTMDB(movieRepo *storage.MovieRepositoryPG, jobQueue *job.JobQueue, tmdb *client.TMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	m := tabTMDB{
-		emdb:   emdb,
-		tmdb:   tmdb,
-		logger: logger,
+		movieRepo: movieRepo,
+		jobQueue:  jobQueue,
+		tmdb:      tmdb,
+		logger:    logger,
 	}
 
 	return m, nil
@@ -127,15 +131,14 @@ func (m *tabTMDB) SearchTMDBCmd(query string) tea.Cmd {
 
 func (m *tabTMDB) ImportMovieCmd(movie Movie) tea.Cmd {
 	return func() tea.Msg {
-		newMovie, err := m.emdb.CreateMovie(movie.m)
-		if err != nil {
+		if err := m.movieRepo.Store(movie.m); err != nil {
 			return err
 		}
-		if err := m.emdb.CreateJob(newMovie.ID, string(moviestore.ActionRefreshIMDBReviews)); err != nil {
+		if err := m.jobQueue.Add(movie.m.ID, string(moviestore.ActionRefreshIMDBReviews)); err != nil {
 			return err
 		}
 
-		return NewMovie(Movie{m: newMovie})
+		return NewMovie(movie)
 	}
 }
 

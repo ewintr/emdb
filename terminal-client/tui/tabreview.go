@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"code.ewintr.nl/emdb/client"
 	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
+	"code.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -16,7 +16,7 @@ import (
 
 type tabReview struct {
 	initialized    bool
-	emdb           *client.EMDB
+	reviewRepo     *storage.ReviewRepositoryPG
 	width          int
 	height         int
 	mode           string
@@ -28,7 +28,7 @@ type tabReview struct {
 	logger         *Logger
 }
 
-func NewTabReview(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
+func NewTabReview(reviewRepo *storage.ReviewRepositoryPG, logger *Logger) (tea.Model, tea.Cmd) {
 	reviewViewport := viewport.New(0, 0)
 	//reviewViewport.KeyMap = viewport.KeyMap{}
 
@@ -42,7 +42,7 @@ func NewTabReview(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	inputMentions.CharLimit = 500
 
 	return &tabReview{
-		emdb:           emdb,
+		reviewRepo:     reviewRepo,
 		mode:           "view",
 		reviewViewport: reviewViewport,
 		inputQuality:   inputQuality,
@@ -97,7 +97,7 @@ func (m *tabReview) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.formFocus = 0
 				m.logger.Log("fetching next unrated review")
 				cmds = append(cmds, m.inputQuality.Focus())
-				cmds = append(cmds, FetchNextUnratedReview(m.emdb))
+				cmds = append(cmds, FetchNextUnratedReview(m.reviewRepo))
 			default:
 				m.logger.Log(fmt.Sprintf("key: %s", msg.String()))
 				m.reviewViewport, cmd = m.reviewViewport.Update(msg)
@@ -115,7 +115,7 @@ func (m *tabReview) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ReviewStored:
 		m.logger.Log(fmt.Sprintf("stored review %s", msg))
 		cmds = append(cmds, m.inputQuality.Focus())
-		cmds = append(cmds, FetchNextUnratedReview(m.emdb))
+		cmds = append(cmds, FetchNextUnratedReview(m.reviewRepo))
 	}
 
 	return m, tea.Batch(cmds...)
@@ -210,7 +210,7 @@ func (m *tabReview) StoreReview() tea.Cmd {
 		m.selectedReview.Quality = quality
 		//m.selectedReview.Mentions = strings.Split(mentions, ",")
 
-		if err := m.emdb.UpdateReview(m.selectedReview); err != nil {
+		if err := m.reviewRepo.Store(m.selectedReview); err != nil {
 			return err
 		}
 
@@ -218,9 +218,9 @@ func (m *tabReview) StoreReview() tea.Cmd {
 	}
 }
 
-func FetchNextUnratedReview(emdb *client.EMDB) tea.Cmd {
+func FetchNextUnratedReview(reviewRepo *storage.ReviewRepositoryPG) tea.Cmd {
 	return func() tea.Msg {
-		review, err := emdb.GetNextUnratedReview()
+		review, err := reviewRepo.FindNextUnrated()
 		if err != nil {
 			return err
 		}

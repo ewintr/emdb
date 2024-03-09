@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"code.ewintr.nl/emdb/client"
+	"code.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -24,7 +24,7 @@ type StoredMovie struct{}
 
 type tabEMDB struct {
 	initialized    bool
-	emdb           *client.EMDB
+	movieRepo      *storage.MovieRepositoryPG
 	mode           string
 	focused        string
 	colWidth       int
@@ -38,7 +38,7 @@ type tabEMDB struct {
 	logger         *Logger
 }
 
-func NewTabEMDB(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
+func NewTabEMDB(movieRepo *storage.MovieRepositoryPG, logger *Logger) (tea.Model, tea.Cmd) {
 	del := list.NewDefaultDelegate()
 	list := list.New([]list.Item{}, del, 0, 0)
 	list.Title = "Movies"
@@ -65,7 +65,7 @@ func NewTabEMDB(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
 
 	m := tabEMDB{
 		focused:        "form",
-		emdb:           emdb,
+		movieRepo:      movieRepo,
 		logger:         logger,
 		mode:           "view",
 		list:           list,
@@ -76,7 +76,7 @@ func NewTabEMDB(emdb *client.EMDB, logger *Logger) (tea.Model, tea.Cmd) {
 	}
 
 	logger.Log("search emdb...")
-	return m, FetchMovieList(emdb)
+	return m, FetchMovieList(movieRepo)
 }
 
 func (m tabEMDB) Init() tea.Cmd {
@@ -105,7 +105,7 @@ func (m tabEMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	case StoredMovie:
 		m.logger.Log("stored movie, fetching movie list")
-		cmds = append(cmds, FetchMovieList(m.emdb))
+		cmds = append(cmds, FetchMovieList(m.movieRepo))
 	case tea.KeyMsg:
 		switch m.mode {
 		case "edit":
@@ -265,7 +265,7 @@ func (m *tabEMDB) StoreMovie() tea.Cmd {
 			return fmt.Errorf("rating cannot be converted to an int: %w", err)
 		}
 		updatedMovie.m.Comment = m.inputComment.Value()
-		if _, err := m.emdb.CreateMovie(updatedMovie.m); err != nil {
+		if err := m.movieRepo.Store(updatedMovie.m); err != nil {
 			return err
 		}
 		return StoredMovie{}
@@ -276,9 +276,9 @@ func (m *tabEMDB) Log(s string) {
 	m.logger.Log(s)
 }
 
-func FetchMovieList(emdb *client.EMDB) tea.Cmd {
+func FetchMovieList(movieRepo *storage.MovieRepositoryPG) tea.Cmd {
 	return func() tea.Msg {
-		ems, err := emdb.GetMovies()
+		ems, err := movieRepo.FindAll()
 		if err != nil {
 			return err
 		}

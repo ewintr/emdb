@@ -10,7 +10,7 @@ run-tui-local:
 	EMDB_BASE_URL=http://localhost:8085/ EMDB_API_KEY=hoi go run ./cmd/terminal-client/main.go
 
 run-tui:
-	go run ./cmd/terminal-client/main.go
+	go run ./terminal-client/main.go
 
 run-md-export:
 	go run ./cmd/markdown-export/main.go
