@@ -2,10 +2,16 @@ package storage
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	_ "github.com/lib/pq"
+)
+
+var (
+	ErrPostgresqlFailure        = errors.New("postgresql failure")
+	ErrNotEnoughSQLMigrations   = errors.New("not enough sql migrations")
+	ErrIncompatibleSQLMigration = errors.New("incompatible sql migration")
 )
 
 type migration string
@@ -95,14 +101,14 @@ CREATE TABLE IF NOT EXISTS migration
 	// find existing
 	rows, err := pg.db.Query(`SELECT query FROM migration ORDER BY id`)
 	if err != nil {
-		return fmt.Errorf("%w: %v", moviestore.ErrSqliteFailure, err)
+		return fmt.Errorf("%w: %v", ErrPostgresqlFailure, err)
 	}
 
 	existing := []migration{}
 	for rows.Next() {
 		var query string
 		if err := rows.Scan(&query); err != nil {
-			return fmt.Errorf("%w: %v", moviestore.ErrSqliteFailure, err)
+			return fmt.Errorf("%w: %v", ErrPostgresqlFailure, err)
 		}
 		existing = append(existing, migration(query))
 	}
@@ -111,13 +117,13 @@ CREATE TABLE IF NOT EXISTS migration
 	// compare
 	missing, err := compareMigrations(wanted, existing)
 	if err != nil {
-		return fmt.Errorf("%w: %v", moviestore.ErrSqliteFailure, err)
+		return fmt.Errorf("%w: %v", ErrPostgresqlFailure, err)
 	}
 
 	// execute missing
 	for _, query := range missing {
 		if _, err := pg.db.Exec(string(query)); err != nil {
-			return fmt.Errorf("%w: %v", moviestore.ErrSqliteFailure, err)
+			return fmt.Errorf("%w: %v", ErrPostgresqlFailure, err)
 		}
 
 		// register
@@ -125,7 +131,7 @@ CREATE TABLE IF NOT EXISTS migration
 INSERT INTO migration
 (query) VALUES ($1)
 `, query); err != nil {
-			return fmt.Errorf("%w: %v", moviestore.ErrSqliteFailure, err)
+			return fmt.Errorf("%w: %v", ErrPostgresqlFailure, err)
 		}
 	}
 
@@ -147,7 +153,7 @@ func (pg *Postgres) Query(query string, args ...any) (*sql.Rows, error) {
 func compareMigrations(wanted, existing []migration) ([]migration, error) {
 	needed := []migration{}
 	if len(wanted) < len(existing) {
-		return []migration{}, moviestore.ErrNotEnoughSQLMigrations
+		return []migration{}, ErrNotEnoughSQLMigrations
 	}
 
 	for i, want := range wanted {
@@ -157,7 +163,7 @@ func compareMigrations(wanted, existing []migration) ([]migration, error) {
 		case want == existing[i]:
 			// do nothing
 		case want != existing[i]:
-			return []migration{}, fmt.Errorf("%w: %v", moviestore.ErrIncompatibleSQLMigration, want)
+			return []migration{}, fmt.Errorf("%w: %v", ErrIncompatibleSQLMigration, want)
 		}
 	}
 

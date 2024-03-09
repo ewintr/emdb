@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"code.ewintr.nl/emdb/cmd/api-service/moviestore"
 	"github.com/google/uuid"
 )
 
@@ -53,7 +52,7 @@ SET
   rating = EXCLUDED.rating, 
   comment = EXCLUDED.comment;`,
 		m.ID, m.TMDBID, m.IMDBID, m.Title, m.EnglishTitle, m.Year, directors, m.Summary, m.WatchedOn, m.Rating, m.Comment); err != nil {
-		return fmt.Errorf("%w: %v", moviestore.ErrSqliteFailure, err)
+		return fmt.Errorf("%w: %v", ErrPostgresqlFailure, err)
 	}
 
 	return nil
@@ -61,7 +60,7 @@ SET
 
 func (mr *MovieRepository) Delete(id string) error {
 	if _, err := mr.db.Exec(`DELETE FROM movie WHERE id=$1`, id); err != nil {
-		return fmt.Errorf("%w: %v", moviestore.ErrSqliteFailure, err)
+		return fmt.Errorf("%w: %v", ErrPostgresqlFailure, err)
 	}
 
 	return nil
@@ -81,7 +80,7 @@ WHERE id=$1`, id)
 	}
 	var directors string
 	if err := row.Scan(&m.ID, &m.TMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
-		return Movie{}, fmt.Errorf("%w: %w", moviestore.ErrSqliteFailure, err)
+		return Movie{}, fmt.Errorf("%w: %w", ErrPostgresqlFailure, err)
 	}
 	m.Directors = strings.Split(directors, ",")
 
@@ -93,7 +92,7 @@ func (mr *MovieRepository) FindAll() ([]Movie, error) {
 SELECT id, tmdb_id, imdb_id, title, english_title, year, directors, summary, watched_on, rating, comment
 FROM movie`)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", moviestore.ErrSqliteFailure, err)
+		return nil, fmt.Errorf("%w: %v", ErrPostgresqlFailure, err)
 	}
 
 	movies := make([]Movie, 0)
@@ -102,7 +101,7 @@ FROM movie`)
 		m := Movie{}
 		var directors string
 		if err := rows.Scan(&m.ID, &m.TMDBID, &m.IMDBID, &m.Title, &m.EnglishTitle, &m.Year, &directors, &m.Summary, &m.WatchedOn, &m.Rating, &m.Comment); err != nil {
-			return nil, fmt.Errorf("%w: %v", moviestore.ErrSqliteFailure, err)
+			return nil, fmt.Errorf("%w: %v", ErrPostgresqlFailure, err)
 		}
 		m.Directors = strings.Split(directors, ",")
 		movies = append(movies, m)
