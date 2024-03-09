@@ -9,8 +9,6 @@ type JobStatus string
 type JobType string
 
 const (
-	interval = 20 * time.Second
-
 	TypeSimple JobType = "simple"
 	TypeAI     JobType = "ai"
 

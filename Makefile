@@ -11,5 +11,5 @@ md-export:
 	go run ./markdown-export/main.go
 
 worker:
-	go run ./worker/main.go
+	go run ./worker-client/main.go
 

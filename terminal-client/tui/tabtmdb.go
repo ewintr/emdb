@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
 )
 
 type tabTMDB struct {
@@ -74,6 +75,7 @@ func (m tabTMDB) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "i":
 			if m.focused == "result" {
 				movie := m.searchResults.SelectedItem().(Movie)
+				movie.m.ID = uuid.New().String()
 				cmds = append(cmds, m.ImportMovieCmd(movie), m.ResetCmd())
 				m.Log(fmt.Sprintf("imported movie %s", movie.Title()))
 			}
