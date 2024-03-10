@@ -1,8 +1,6 @@
 package worker
 
 import (
-	"time"
-
 	"code.ewintr.nl/emdb/job"
 )
 
@@ -17,7 +15,6 @@ func (w *Worker) FindAllTitles(jobID int) {
 	}
 
 	for _, r := range reviews {
-		time.Sleep(1 * time.Second)
 		if err := w.jq.Add(r.ID, job.ActionFindTitles); err != nil {
 			logger.Error("could not add job", "error", err)
 			w.jq.MarkFailed(jobID)

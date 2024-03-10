@@ -45,7 +45,7 @@ func (w *Worker) Run() {
 		j, err := w.jq.Next()
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			logger.Info("no jobs found")
+			//logger.Info("no jobs found")
 			continue
 		case err != nil:
 			logger.Error("could not get next job", "error", err)

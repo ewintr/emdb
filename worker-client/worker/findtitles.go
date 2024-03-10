@@ -3,6 +3,8 @@ package worker
 import (
 	"encoding/json"
 	"fmt"
+
+	"code.ewintr.nl/emdb/storage"
 )
 
 const (
@@ -12,11 +14,13 @@ const (
 %s
 ---- 
 
-If you found any movie titles other than %s, list them below in a JSON array. If there are other titles, like TV shows, books or games, ignore them. The format is as follows:
+If you found any movie titles other than %s, list them below in a JSON array. If there are titles of other media, like TV shows, books or games, ignore them. The format is as follows:
 
-["movie title 1", "movie title 2"]
+---
+{"titles": ["movie title 1", "movie title 2"]}
+---
 
-Just answer with the JSON and nothing else. If you don't see any other movie titles, just answer with an empty JSON array.`
+Just answer with the JSON and nothing else. If you don't see any other movie titles, just use an empty JSON array.`
 )
 
 func (w *Worker) FindTitles(jobID int, reviewID string) {
@@ -42,23 +46,26 @@ func (w *Worker) FindTitles(jobID int, reviewID string) {
 	}
 
 	prompt := fmt.Sprintf(mentionsTemplate, movieTitle, review.Review, movieTitle)
-	titles, err := w.ollama.Generate("mistral", prompt)
+	resp, err := w.ollama.Generate("mistral", prompt)
 	if err != nil {
 		logger.Error("could not find titles: %w", err)
 	}
-	logger.Info("checked review", "found", titles)
-	var resp []string
-	if err := json.Unmarshal([]byte(titles), &resp); err != nil {
+	logger.Info("checked review", "found", resp)
+	var mentions storage.TitleMentions
+	if err := json.Unmarshal([]byte(resp), &mentions); err != nil {
 		logger.Error("could not unmarshal llm response", "error", err)
 		w.jq.MarkFailed(jobID)
 		return
 	}
 
-	review.Titles = resp
+	review.Mentions = mentions
 
 	if err := w.reviewRepo.Store(review); err != nil {
 		logger.Error("could not update review", "error", err)
 		w.jq.MarkFailed(jobID)
 		return
 	}
+
+	logger.Info("done finding title mentions", "count", len(mentions.Titles))
+	w.jq.MarkDone(jobID)
 }

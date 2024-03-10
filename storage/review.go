@@ -10,6 +10,10 @@ const (
 	MentionsSeparator = "|"
 )
 
+type TitleMentions struct {
+	Titles []string
+}
+
 type ReviewSource string
 
 type Review struct {
@@ -20,7 +24,7 @@ type Review struct {
 	Review      string
 	MovieRating int
 	Quality     int
-	Titles      []string
+	Mentions    TitleMentions
 }
 
 type ReviewRepository struct {
@@ -34,7 +38,7 @@ func NewReviewRepository(db *Postgres) *ReviewRepository {
 }
 
 func (rr *ReviewRepository) Store(r Review) error {
-	titles, err := json.Marshal(r.Titles)
+	titles, err := json.Marshal(r.Mentions)
 	if err != nil {
 		return err
 	}
@@ -64,7 +68,7 @@ WHERE id=$1`, id)
 	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 		return Review{}, err
 	}
-	if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+	if err := json.Unmarshal([]byte(titles), &r.Mentions); err != nil {
 		return Review{}, err
 	}
 
@@ -87,7 +91,7 @@ WHERE movie_id=$1`, movieID)
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+		if err := json.Unmarshal([]byte(titles), &r.Mentions); err != nil {
 			return []Review{}, err
 		}
 		reviews = append(reviews, r)
@@ -112,7 +116,7 @@ LIMIT 1`)
 	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 		return Review{}, err
 	}
-	if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+	if err := json.Unmarshal([]byte(titles), &r.Mentions); err != nil {
 		return Review{}, err
 	}
 
@@ -135,7 +139,7 @@ WHERE quality=0`)
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+		if err := json.Unmarshal([]byte(titles), &r.Mentions); err != nil {
 			return []Review{}, err
 		}
 		reviews = append(reviews, r)
@@ -160,7 +164,7 @@ LIMIT 1`)
 	if err := row.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 		return Review{}, err
 	}
-	if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+	if err := json.Unmarshal([]byte(titles), &r.Mentions); err != nil {
 		return Review{}, err
 	}
 
@@ -183,7 +187,7 @@ WHERE mentioned_titles='{}'`)
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+		if err := json.Unmarshal([]byte(titles), &r.Mentions); err != nil {
 			return []Review{}, err
 		}
 		reviews = append(reviews, r)
@@ -208,7 +212,7 @@ FROM review`)
 		if err := rows.Scan(&r.ID, &r.MovieID, &r.Source, &r.URL, &r.Review, &r.MovieRating, &r.Quality, &titles); err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal([]byte(titles), &r.Titles); err != nil {
+		if err := json.Unmarshal([]byte(titles), &r.Mentions); err != nil {
 			return []Review{}, err
 		}
 		reviews = append(reviews, r)
