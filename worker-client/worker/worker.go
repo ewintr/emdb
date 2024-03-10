@@ -39,6 +39,12 @@ func (w *Worker) Run() {
 	logger := w.logger.With("method", "run")
 	logger.Info("starting worker")
 
+	logger.Info("setting al existing jobs to todo")
+	if err := w.jq.ResetAll(); err != nil {
+		logger.Error("could not set all jobs to todo", "error", err)
+		return
+	}
+
 	for {
 		time.Sleep(interval)
 

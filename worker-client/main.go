@@ -13,20 +13,6 @@ import (
 	"code.ewintr.nl/emdb/worker-client/worker"
 )
 
-const (
-	mentionsTemplate = `The following text is a user comment about the movie {{.title}}. In it, the user may have referenced other movie titles. List them if you see any.
-
-----
-{{.review}}
----- 
-
-If you found any movie titles other than {{.title}}, list them below in a JSON array. If there are other titles, like TV shows, books or games, ignore them. The format is as follows:
-
-["movie title 1", "movie title 2"]
-
-Just answer with the JSON and nothing else. If you don't see any other movie titles, just answer with an empty array.`
-)
-
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	dbHost := os.Getenv("EMDB_DB_HOST")

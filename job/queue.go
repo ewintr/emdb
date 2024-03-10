@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"time"
 
 	"code.ewintr.nl/emdb/storage"
 )
@@ -20,27 +19,13 @@ func NewJobQueue(db *storage.Postgres, logger *slog.Logger) *JobQueue {
 		logger: logger.With("service", "jobqueue"),
 	}
 
-	go jq.Run()
-
 	return jq
 }
 
-func (jq *JobQueue) Run() {
-	logger := jq.logger.With("method", "run")
-	ticker := time.NewTicker(time.Hour)
-	for {
-		select {
-		case <-ticker.C:
-			logger.Info("resetting stuck jobs")
-			if _, err := jq.db.Exec(`
-UPDATE job_queue 
-SET status = 'todo'
-WHERE status = 'doing' 
-	AND EXTRACT(EPOCH FROM now() - updated_at) > 2*24*60*60;`); err != nil {
-				logger.Error("could not clean up job queue", "error", err)
-			}
-		}
-	}
+func (jq *JobQueue) ResetAll() error {
+	_, err := jq.db.Exec(`UPDATE job_queue SET status='todo'`)
+
+	return err
 }
 
 func (jq *JobQueue) Add(movieID, action string) error {
