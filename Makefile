@@ -13,3 +13,8 @@ md-export:
 worker:
 	go run ./worker-client/main.go
 
+deploy-worker:
+	go build -o emdb-worker ./worker-client/main.go
+	sudo systemctl stop emdb.service
+	sudo cp emdb-worker /usr/local/bin
+	sudo systemctl start emdb.service

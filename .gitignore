@@ -6,3 +6,4 @@ emdb-api
 public
 *.sql
 *.sql.bak
+emdb-worker
