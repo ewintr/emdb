@@ -1,8 +1,12 @@
 package main
 
-import "code.ewintr.nl/emdb/desktop-client/gui"
+import (
+	"code.ewintr.nl/emdb/desktop-client/backend"
+	"code.ewintr.nl/emdb/desktop-client/gui"
+)
 
 func main() {
-	g := gui.New()
+	b := backend.NewBackend()
+	g := gui.New(b.In(), b.Out())
 	g.Run()
 }
