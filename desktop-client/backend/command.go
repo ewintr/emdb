@@ -1,7 +1,8 @@
 package backend
 
 const (
-	CommandAdd = "add"
+	CommandAdd            = "add"
+	CommandRefreshWatched = "refreshWatched"
 
 	ArgName = "name"
 )

@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"strings"
+
 	"code.ewintr.nl/emdb/desktop-client/backend"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -11,22 +13,24 @@ import (
 )
 
 type GUI struct {
-	a fyne.App
-	w fyne.Window
-	s *backend.State
-	c chan backend.Command
+	a   fyne.App
+	w   fyne.Window
+	in  chan backend.State
+	out chan backend.Command
+	s   *State
 }
 
-func New(c chan backend.Command, s *backend.State) *GUI {
+func New(out chan backend.Command, in chan backend.State) *GUI {
 	a := app.New()
 	w := a.NewWindow("EMDB")
 	w.Resize(fyne.NewSize(800, 600))
 
 	g := &GUI{
-		a: a,
-		w: w,
-		s: s,
-		c: c,
+		a:   a,
+		w:   w,
+		in:  in,
+		out: out,
+		s:   NewState(),
 	}
 
 	g.SetContent()
@@ -35,7 +39,25 @@ func New(c chan backend.Command, s *backend.State) *GUI {
 }
 
 func (g *GUI) Run() {
+	go func() {
+		for s := range g.in {
+			g.Update(s)
+		}
+	}()
 	g.w.ShowAndRun()
+}
+
+func (g *GUI) Update(bs backend.State) {
+	// watched
+	watched := make([]string, 0, len(bs.Watched))
+	for _, m := range bs.Watched {
+		watched = append(watched, m.Title)
+	}
+	g.s.Watched.Set(watched)
+
+	// log
+	g.s.Log.Set(strings.Join(bs.Log, "\n"))
+
 }
 
 func (g *GUI) SetContent() {
@@ -49,7 +71,7 @@ func (g *GUI) SetContent() {
 	form := container.New(layout.NewFormLayout(), label1, input, label2, value2)
 
 	button := widget.NewButton("Save", func() {
-		g.c <- backend.Command{
+		g.out <- backend.Command{
 			Name: backend.CommandAdd,
 			Args: map[string]any{
 				backend.ArgName: input.Text,
