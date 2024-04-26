@@ -51,7 +51,7 @@ func (g *GUI) Update(bs backend.State) {
 	// watched
 	watched := make([]string, 0, len(bs.Watched))
 	for _, m := range bs.Watched {
-		watched = append(watched, m.Title)
+		watched = append(watched, m.EnglishTitle)
 	}
 	g.s.Watched.Set(watched)
 
