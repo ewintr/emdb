@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"code.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/storage"
 )
 
 type JobQueue struct {
@@ -63,7 +63,7 @@ LIMIT 1;`)
 UPDATE job_queue 
 SET status='doing'
 WHERE id=$1;`, job.ID); err != nil {
-		logger.Error("could not set job to doing", "error")
+		logger.Error("could not set job to doing", "error", err)
 		return Job{}, err
 	}
 

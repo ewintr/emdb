@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"code.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"

@@ -3,9 +3,9 @@ package tui
 import (
 	"fmt"
 
-	"code.ewintr.nl/emdb/client"
-	"code.ewintr.nl/emdb/job"
-	"code.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/client"
+	"go-mod.ewintr.nl/emdb/job"
+	"go-mod.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"

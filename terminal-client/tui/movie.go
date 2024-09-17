@@ -3,7 +3,7 @@ package tui
 import (
 	"fmt"
 
-	"code.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/list"
 )
 

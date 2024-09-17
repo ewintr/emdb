@@ -1,7 +1,7 @@
 package backend
 
 import (
-	"code.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/storage"
 )
 
 type State struct {

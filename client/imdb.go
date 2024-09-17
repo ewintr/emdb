@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"code.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/storage"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
 )

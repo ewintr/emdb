@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"os"
 
-	"code.ewintr.nl/emdb/client"
-	"code.ewintr.nl/emdb/job"
-	"code.ewintr.nl/emdb/storage"
-	"code.ewintr.nl/emdb/terminal-client/tui"
+	"go-mod.ewintr.nl/emdb/client"
+	"go-mod.ewintr.nl/emdb/job"
+	"go-mod.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/terminal-client/tui"
 )
 
 func main() {

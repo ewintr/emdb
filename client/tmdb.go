@@ -3,7 +3,7 @@ package client
 import (
 	"time"
 
-	"code.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/storage"
 	tmdb "github.com/cyruzin/golang-tmdb"
 )
 

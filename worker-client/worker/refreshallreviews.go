@@ -3,7 +3,7 @@ package worker
 import (
 	"time"
 
-	"code.ewintr.nl/emdb/job"
+	"go-mod.ewintr.nl/emdb/job"
 )
 
 func (w *Worker) RefreshAllReviews(jobID int) {

@@ -1,6 +1,6 @@
 package worker
 
-import "code.ewintr.nl/emdb/job"
+import "go-mod.ewintr.nl/emdb/job"
 
 func (w *Worker) RefreshReviews(jobID int, movieID string) {
 	logger := w.logger.With("method", "fetchReviews", "jobID", jobID, "movieID", movieID)

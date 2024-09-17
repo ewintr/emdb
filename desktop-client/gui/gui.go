@@ -3,7 +3,7 @@ package gui
 import (
 	"strings"
 
-	"code.ewintr.nl/emdb/desktop-client/backend"
+	"go-mod.ewintr.nl/emdb/desktop-client/backend"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"

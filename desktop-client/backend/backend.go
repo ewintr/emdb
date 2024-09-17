@@ -3,8 +3,8 @@ package backend
 import (
 	"fmt"
 
-	"code.ewintr.nl/emdb/client"
-	"code.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/client"
+	"go-mod.ewintr.nl/emdb/storage"
 )
 
 type Backend struct {

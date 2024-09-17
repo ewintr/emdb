@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"code.ewintr.nl/emdb/client"
-	"code.ewintr.nl/emdb/desktop-client/backend"
-	"code.ewintr.nl/emdb/desktop-client/gui"
-	"code.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/client"
+	"go-mod.ewintr.nl/emdb/desktop-client/backend"
+	"go-mod.ewintr.nl/emdb/desktop-client/gui"
+	"go-mod.ewintr.nl/emdb/storage"
 )
 
 func main() {

@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"code.ewintr.nl/emdb/job"
+	"go-mod.ewintr.nl/emdb/job"
 )
 
 func (w *Worker) FindAllTitles(jobID int) {

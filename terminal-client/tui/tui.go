@@ -1,9 +1,9 @@
 package tui
 
 import (
-	"code.ewintr.nl/emdb/client"
-	"code.ewintr.nl/emdb/job"
-	"code.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/client"
+	"go-mod.ewintr.nl/emdb/job"
+	"go-mod.ewintr.nl/emdb/storage"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"

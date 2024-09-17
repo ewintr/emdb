@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"code.ewintr.nl/emdb/client"
-	"code.ewintr.nl/emdb/job"
-	"code.ewintr.nl/emdb/storage"
-	"code.ewintr.nl/emdb/worker-client/worker"
+	"go-mod.ewintr.nl/emdb/client"
+	"go-mod.ewintr.nl/emdb/job"
+	"go-mod.ewintr.nl/emdb/storage"
+	"go-mod.ewintr.nl/emdb/worker-client/worker"
 )
 
 func main() {
